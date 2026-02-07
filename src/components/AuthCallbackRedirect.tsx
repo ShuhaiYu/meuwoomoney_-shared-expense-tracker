@@ -1,40 +1,31 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { authClient } from "@/lib/auth/client";
+import { useEffect } from "react";
 import { PawIcon } from "./CatIcon";
 
+/**
+ * Handles the OAuth callback by exchanging the session verifier server-side.
+ *
+ * Instead of using the client-side useSession() hook (which relies on fetch()
+ * to set cookies — unreliable in iOS standalone/Home Screen WKWebView),
+ * we navigate to /api/auth/exchange which does the exchange server-side
+ * and sets cookies via an HTTP redirect response.
+ */
 export function AuthCallbackRedirect() {
-  const { data: session, isPending } = authClient.useSession();
-  const hasPended = useRef(false);
-
-  // Track that we've gone through at least one pending cycle
-  // This ensures the verifier is being processed before we redirect
   useEffect(() => {
-    if (isPending) {
-      hasPended.current = true;
-    }
-  }, [isPending]);
+    const params = new URLSearchParams(window.location.search);
+    const verifier = params.get("neon_auth_session_verifier");
 
-  useEffect(() => {
-    // Only redirect after the pending cycle completes with a valid session
-    // This prevents redirecting with a stale session before the verifier is processed
-    if (hasPended.current && !isPending && session?.user) {
+    if (verifier) {
+      // Navigate to server-side exchange endpoint.
+      // This is a full page navigation, so Set-Cookie headers from the
+      // redirect response are always applied — even in iOS standalone mode.
+      window.location.href = `/api/auth/exchange?neon_auth_session_verifier=${encodeURIComponent(verifier)}`;
+    } else {
+      // No verifier — shouldn't happen, but redirect home as fallback
       window.location.href = "/";
     }
-
-    // Fallback: if useSession() never goes pending (old cookies were already cleared
-    // by middleware), it will start processing the verifier and then resolve.
-    // Give it a moment, then redirect regardless.
-    if (!isPending && !session?.user && !hasPended.current) {
-      const timer = setTimeout(() => {
-        // If after a brief wait there's still no session, redirect anyway
-        // The verifier might have been processed via a different mechanism
-        window.location.href = "/";
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isPending, session]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-cat-cream flex items-center justify-center">

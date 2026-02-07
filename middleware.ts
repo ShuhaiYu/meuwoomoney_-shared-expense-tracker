@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SESSION_COOKIES = [
-  "__Secure-neon-auth.session_token",
-  "__Secure-neon-auth.local.session_data",
-  "__Secure-neon-auth.session_challange",
-  "neon-auth.session_token",
-  "neon-auth.local.session_data",
-  "neon-auth.session_challange",
-];
-
 export default function middleware(request: NextRequest) {
   console.log("[middleware]", request.nextUrl.pathname,
     "cookies:", request.cookies.getAll().map(c => c.name));
 
-  // OAuth callback: clear old session cookies so the new verifier is processed cleanly
+  // OAuth callback: pass through so the page can render AuthCallbackRedirect,
+  // which navigates to /api/auth/exchange for server-side verifier exchange.
+  // Important: do NOT delete cookies here — the session_challange cookie is
+  // needed for the verifier exchange, and deleting it breaks the flow
+  // (especially in iOS standalone/Home Screen mode).
   if (request.nextUrl.searchParams.has("neon_auth_session_verifier")) {
-    console.log("[middleware] OAuth callback with verifier, clearing old session cookies");
-    const response = NextResponse.next();
-    for (const name of SESSION_COOKIES) {
-      response.cookies.delete(name);
-    }
-    return response;
+    console.log("[middleware] OAuth callback with verifier, passing through");
+    return NextResponse.next();
   }
 
   const sessionToken =
