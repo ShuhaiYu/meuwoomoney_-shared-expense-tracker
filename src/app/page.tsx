@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAllTransactions } from "@/lib/queries";
-import { isApprovedUser } from "@/lib/auth-check";
+import { isApprovedUser, isLoggedIn } from "@/lib/auth-check";
 import { Dashboard } from "@/components/Dashboard";
 import { AuthCallbackRedirect } from "@/components/AuthCallbackRedirect";
 
@@ -19,7 +19,10 @@ export default async function Page({
   }
 
   const approved = await isApprovedUser();
-  if (!approved) redirect("/demo");
+  if (!approved) {
+    const loggedIn = await isLoggedIn();
+    redirect(loggedIn ? "/demo?restricted=true" : "/demo");
+  }
 
   const transactions = await getAllTransactions();
   return <Dashboard initialTransactions={transactions} />;

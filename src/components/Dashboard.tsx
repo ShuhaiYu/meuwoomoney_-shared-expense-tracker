@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { FileText, LogIn } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { FileText, LogIn, LogOut } from "lucide-react";
 import { nanoid } from "nanoid";
 import { UserMenu } from "./UserMenu";
+import type { UserInfo } from "@/lib/auth-check";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
@@ -18,9 +19,11 @@ import { SettlementBanner, SettlementCard } from "./SettlementCard";
 interface DashboardProps {
   initialTransactions: Transaction[];
   isGuest?: boolean;
+  isRestricted?: boolean;
+  restrictedUser?: UserInfo;
 }
 
-export function Dashboard({ initialTransactions, isGuest }: DashboardProps) {
+export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser }: DashboardProps) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [guestTransactions, setGuestTransactions] = useState<Transaction[]>(initialTransactions);
 
@@ -87,10 +90,16 @@ export function Dashboard({ initialTransactions, isGuest }: DashboardProps) {
     <div className="min-h-screen bg-cat-cream font-sans text-gray-800 pb-20">
       {isGuest && (
         <div className="bg-cat-orange text-white text-center py-2 px-4 text-sm font-bold">
-          Demo Mode — changes are not saved.{" "}
-          <a href="/auth/sign-in" className="underline hover:text-cat-cream ml-1">
-            Sign In
-          </a>
+          {isRestricted ? (
+            "This app is for authorized members only. Showing demo data."
+          ) : (
+            <>
+              Demo Mode — changes are not saved.{" "}
+              <a href="/auth/sign-in" className="underline hover:text-cat-cream ml-1">
+                Sign In
+              </a>
+            </>
+          )}
         </div>
       )}
       {!isGuest && <SettlementBanner />}
@@ -110,13 +119,15 @@ export function Dashboard({ initialTransactions, isGuest }: DashboardProps) {
             >
               <FileText size={16} /> Monthly Report
             </button>
-            {isGuest ? (
+            {isGuest && !isRestricted ? (
               <a
                 href="/auth/sign-in"
                 className="flex items-center gap-2 bg-cat-orange text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-cat-brown transition"
               >
                 <LogIn size={16} /> Sign In
               </a>
+            ) : isRestricted && restrictedUser ? (
+              <RestrictedAvatar user={restrictedUser} />
             ) : (
               <UserMenu />
             )}
@@ -147,6 +158,67 @@ export function Dashboard({ initialTransactions, isGuest }: DashboardProps) {
         transactions={filteredTransactions}
         isGuest={isGuest}
       />
+    </div>
+  );
+}
+
+function RestrictedAvatar({ user }: { user: UserInfo }) {
+  const [open, setOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const initial = (user.name ?? user.email ?? "?").charAt(0).toUpperCase();
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-10 h-10 rounded-full bg-cat-orange text-white font-bold text-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-cat-orange/50 transition focus:outline-none focus:ring-2 focus:ring-cat-orange/50"
+      >
+        {user.image && !imgError ? (
+          <img
+            src={user.image}
+            alt={user.name ?? "Avatar"}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          initial
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+          <div className="px-4 py-2">
+            <p className="font-bold text-cat-dark text-sm truncate">{user.name ?? "User"}</p>
+            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+          </div>
+          <hr className="border-gray-100 my-1" />
+          <a
+            href="/api/auth/sign-out"
+            onClick={(e) => {
+              e.preventDefault();
+              fetch("/api/auth/sign-out", { method: "POST" }).finally(() => {
+                window.location.href = "/auth/sign-in";
+              });
+            }}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-cat-brown hover:bg-cat-cream transition"
+          >
+            <LogOut size={16} />
+            Sign out
+          </a>
+        </div>
+      )}
     </div>
   );
 }

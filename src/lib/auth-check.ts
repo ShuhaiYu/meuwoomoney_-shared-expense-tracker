@@ -1,10 +1,19 @@
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 
-/**
- * Try to get user email from the local session_data JWT cookie (fast path).
- */
-async function getEmailFromCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<string | null> {
+export interface UserInfo {
+  name: string | null;
+  email: string | null;
+  image: string | null;
+}
+
+interface JwtUser {
+  email?: string;
+  name?: string;
+  image?: string;
+}
+
+async function decodeSessionCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<JwtUser | null> {
   const sessionData = cookieStore.get("__Secure-neon-auth.local.session_data");
   if (!sessionData?.value) return null;
 
@@ -17,10 +26,18 @@ async function getEmailFromCookie(cookieStore: Awaited<ReturnType<typeof cookies
       new TextEncoder().encode(secret),
       { algorithms: ["HS256"] }
     );
-    return (payload as { user?: { email?: string } }).user?.email ?? null;
+    return (payload as { user?: JwtUser }).user ?? null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Try to get user email from the local session_data JWT cookie (fast path).
+ */
+async function getEmailFromCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<string | null> {
+  const user = await decodeSessionCookie(cookieStore);
+  return user?.email ?? null;
 }
 
 /**
@@ -52,6 +69,25 @@ async function getEmailFromUpstream(cookieStore: Awaited<ReturnType<typeof cooki
     console.log("[auth-check] Upstream fetch failed:", e instanceof Error ? e.message : e);
     return null;
   }
+}
+
+export async function getUserInfo(): Promise<UserInfo | null> {
+  const cookieStore = await cookies();
+  const user = await decodeSessionCookie(cookieStore);
+  if (!user) return null;
+  return {
+    name: user.name ?? null,
+    email: user.email ?? null,
+    image: user.image ?? null,
+  };
+}
+
+export async function isLoggedIn(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const token =
+    cookieStore.get("__Secure-neon-auth.session_token") ??
+    cookieStore.get("neon-auth.session_token");
+  return !!token?.value;
 }
 
 export async function isApprovedUser(): Promise<boolean> {
