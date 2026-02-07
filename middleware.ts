@@ -1,11 +1,11 @@
-import { neonAuthMiddleware } from "@neondatabase/auth/next/server";
+import { auth } from "@/lib/auth/server";
 
-export default neonAuthMiddleware({
+export default auth.middleware({
   loginUrl: "/auth/sign-in",
 });
 
 export const config = {
   matcher: [
-    "/((?!auth|api/auth|api/cron|_next|favicon.ico).*)",
+    "/((?!auth|api/auth|api/cron|_next|favicon\\.ico|icon\\.svg|apple-icon|manifest\\.webmanifest).*)",
   ],
 };

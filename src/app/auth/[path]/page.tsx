@@ -18,7 +18,7 @@ export default async function AuthPage({
 
   return (
     <div className="min-h-screen bg-cat-cream flex items-center justify-center p-4">
-      <AuthView pathname={`/auth/${path}`} />
+      <AuthView path={path} />
     </div>
   );
 }

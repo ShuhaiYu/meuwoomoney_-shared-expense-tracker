@@ -4,38 +4,38 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  const { authApiHandler } = await import("@neondatabase/auth/next/server");
-  return authApiHandler().GET(request, context);
+  const { auth } = await import("@/lib/auth/server");
+  return auth.handler().GET(request, context);
 }
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  const { authApiHandler } = await import("@neondatabase/auth/next/server");
-  return authApiHandler().POST(request, context);
+  const { auth } = await import("@/lib/auth/server");
+  return auth.handler().POST(request, context);
 }
 
 export async function PUT(
   request: Request,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  const { authApiHandler } = await import("@neondatabase/auth/next/server");
-  return authApiHandler().PUT(request, context);
+  const { auth } = await import("@/lib/auth/server");
+  return auth.handler().PUT(request, context);
 }
 
 export async function DELETE(
   request: Request,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  const { authApiHandler } = await import("@neondatabase/auth/next/server");
-  return authApiHandler().DELETE(request, context);
+  const { auth } = await import("@/lib/auth/server");
+  return auth.handler().DELETE(request, context);
 }
 
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  const { authApiHandler } = await import("@neondatabase/auth/next/server");
-  return authApiHandler().PATCH(request, context);
+  const { auth } = await import("@/lib/auth/server");
+  return auth.handler().PATCH(request, context);
 }

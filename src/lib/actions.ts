@@ -4,7 +4,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { neonAuth } from "@neondatabase/auth/next/server";
+import { auth } from "./auth/server";
 import { db } from "./db";
 import { transactions } from "./schema";
 
@@ -20,7 +20,7 @@ const transactionSchema = z.object({
 });
 
 async function requireAuth() {
-  const { session } = await neonAuth();
+  const { data: session } = await auth.getSession();
   if (!session) {
     redirect("/auth/sign-in");
   }

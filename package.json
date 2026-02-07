@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
-    "@neondatabase/auth": "^0.1.0-beta.21",
+    "@neondatabase/auth": "^0.2.0-beta.1",
     "@neondatabase/serverless": "^0.10.0",
     "dotenv": "^17.2.4",
     "drizzle-orm": "^0.39.0",
