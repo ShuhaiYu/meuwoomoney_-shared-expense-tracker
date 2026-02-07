@@ -14,7 +14,9 @@ interface JwtUser {
 }
 
 async function decodeSessionCookie(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<JwtUser | null> {
-  const sessionData = cookieStore.get("__Secure-neon-auth.local.session_data");
+  const sessionData =
+    cookieStore.get("__Secure-neon-auth.local.session_data") ??
+    cookieStore.get("neon-auth.local.session_data");
   if (!sessionData?.value) return null;
 
   const secret = process.env.NEON_AUTH_COOKIE_SECRET;
@@ -44,7 +46,7 @@ async function getEmailFromCookie(cookieStore: Awaited<ReturnType<typeof cookies
  * Fallback: forward neon-auth cookies to the upstream Neon Auth server
  * to fetch session data when local session cookies are missing.
  */
-async function getEmailFromUpstream(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<string | null> {
+async function getUserInfoFromUpstream(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<JwtUser | null> {
   const baseUrl = process.env.NEON_AUTH_BASE_URL;
   if (!baseUrl) return null;
 
@@ -60,11 +62,12 @@ async function getEmailFromUpstream(cookieStore: Awaited<ReturnType<typeof cooki
   try {
     const res = await fetch(`${baseUrl}/api/auth/get-session`, {
       headers: { cookie: neonCookies },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const data = await res.json();
     console.log("[auth-check] Upstream session response user:", data?.user?.email ?? "none");
-    return data?.user?.email ?? null;
+    return data?.user ?? null;
   } catch (e) {
     console.log("[auth-check] Upstream fetch failed:", e instanceof Error ? e.message : e);
     return null;
@@ -73,7 +76,16 @@ async function getEmailFromUpstream(cookieStore: Awaited<ReturnType<typeof cooki
 
 export async function getUserInfo(): Promise<UserInfo | null> {
   const cookieStore = await cookies();
-  const user = await decodeSessionCookie(cookieStore);
+
+  // Fast path: decode local JWT cookie
+  let user = await decodeSessionCookie(cookieStore);
+
+  // Fallback: ask upstream Neon Auth server
+  if (!user) {
+    console.log("[auth-check] getUserInfo: No local JWT, trying upstream...");
+    user = await getUserInfoFromUpstream(cookieStore);
+  }
+
   if (!user) return null;
   return {
     name: user.name ?? null,
@@ -106,7 +118,8 @@ export async function isApprovedUser(): Promise<boolean> {
   // Fallback: ask upstream Neon Auth server directly
   if (!email) {
     console.log("[auth-check] No local session cookie, trying upstream...");
-    email = await getEmailFromUpstream(cookieStore);
+    const upstream = await getUserInfoFromUpstream(cookieStore);
+    email = upstream?.email ?? null;
   }
 
   if (!email) {

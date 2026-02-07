@@ -4,15 +4,25 @@ const NEON_AUTH_COOKIES = [
   "__Secure-neon-auth.session_token",
   "__Secure-neon-auth.local.session_data",
   "__Secure-neon-auth.session_challange",
+  "neon-auth.session_token",
+  "neon-auth.local.session_data",
+  "neon-auth.session_challange",
 ];
 
 function clearSessionResponse() {
   const headers = new Headers({ "Content-Type": "application/json" });
   for (const name of NEON_AUTH_COOKIES) {
-    headers.append(
-      "Set-Cookie",
-      `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`
-    );
+    if (name.startsWith("__Secure-")) {
+      headers.append(
+        "Set-Cookie",
+        `${name}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`
+      );
+    } else {
+      headers.append(
+        "Set-Cookie",
+        `${name}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`
+      );
+    }
   }
   return new Response(JSON.stringify({ success: true }), { status: 200, headers });
 }
