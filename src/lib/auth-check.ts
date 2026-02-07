@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
+import { jwtVerify, errors } from "jose";
 
 export interface UserInfo {
   name: string | null;
@@ -29,7 +29,13 @@ async function decodeSessionCookie(cookieStore: Awaited<ReturnType<typeof cookie
       { algorithms: ["HS256"] }
     );
     return (payload as { user?: JwtUser }).user ?? null;
-  } catch {
+  } catch (e) {
+    // JWT expired but signature was valid — still trust the user info
+    if (e instanceof errors.JWTExpired) {
+      console.log("[auth-check] session_data JWT expired, using payload anyway");
+      const payload = (e as any).payload as { user?: JwtUser } | undefined;
+      return payload?.user ?? null;
+    }
     return null;
   }
 }
