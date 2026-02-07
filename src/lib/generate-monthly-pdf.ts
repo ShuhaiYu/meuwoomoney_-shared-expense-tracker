@@ -207,7 +207,8 @@ function addPersonPage(
   }
 
   // Top 5 transactions
-  const sorted = [...relevantTransactions].sort((a, b) => b.amount - a.amount).slice(0, 5);
+  const parseAmt = (v: string | number) => typeof v === "string" ? parseFloat(v) : v;
+  const sorted = [...relevantTransactions].sort((a, b) => parseAmt(b.amount) - parseAmt(a.amount)).slice(0, 5);
   if (sorted.length > 0) {
     // Get the Y position after the previous table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,7 +222,7 @@ function addPersonPage(
     autoTable(doc, {
       startY: startY + 4,
       head: [["Date", "Description", "Category", "Amount"]],
-      body: sorted.map(t => [t.date, t.description, t.category, fmt(t.amount)]),
+      body: sorted.map(t => [t.date, t.description, t.category, fmt(parseAmt(t.amount))]),
       theme: "grid",
       headStyles: { fillColor: hexToRgb(color), textColor: [255, 255, 255], fontStyle: "bold" },
       styles: { fontSize: 9, cellPadding: 3 },

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Quicksand } from "next/font/google";
+import { Toaster } from "sonner";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const quicksand = Quicksand({
@@ -11,6 +13,11 @@ const quicksand = Quicksand({
 export const metadata: Metadata = {
   title: "MeuwooMoney",
   description: "Shared expense tracker for Felix & Sophie",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MeuwooMoney",
+  },
 };
 
 export default function RootLayout({
@@ -19,9 +26,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${quicksand.variable} font-sans`}>
-        {children}
+        <AuthProvider>
+          {children}
+          <Toaster position="top-center" richColors />
+        </AuthProvider>
       </body>
     </html>
   );

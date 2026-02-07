@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TrendingUp, Filter, Calendar, XCircle, Search, Cat } from "lucide-react";
+import { TrendingUp, Filter, Calendar, XCircle, Search, Cat, FileSearch } from "lucide-react";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { CATEGORIES } from "@/lib/constants";
@@ -15,21 +15,55 @@ interface TransactionListProps {
   setFilterCategory: (cat: Category | "All") => void;
 }
 
+function formatDateLabel(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const dateOnly = new Date(year, month - 1, day);
+  if (dateOnly.getTime() === today.getTime()) return "Today";
+  if (dateOnly.getTime() === yesterday.getTime()) return "Yesterday";
+
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  const monthName = date.toLocaleDateString("en-US", { month: "short" });
+  return `${weekday}, ${monthName} ${day}, ${year}`;
+}
+
 export function TransactionList({ transactions, filterDate, setFilterDate, filterCategory, setFilterCategory }: TransactionListProps) {
-  const hasActiveFilters = filterDate !== "" || filterCategory !== "All";
+  const [searchQuery, setSearchQuery] = useState("");
+  const hasActiveFilters = filterDate !== "" || filterCategory !== "All" || searchQuery !== "";
 
   const clearFilters = () => {
     setFilterDate("");
     setFilterCategory("All");
+    setSearchQuery("");
   };
 
   const filteredTransactions = useMemo(() => {
+    const query = searchQuery.toLowerCase();
     return transactions.filter((t) => {
       const matchesDate = filterDate ? t.date.startsWith(filterDate) : true;
       const matchesCategory = filterCategory !== "All" ? t.category === filterCategory : true;
-      return matchesDate && matchesCategory;
+      const matchesSearch = query ? t.description.toLowerCase().includes(query) : true;
+      return matchesDate && matchesCategory && matchesSearch;
     });
-  }, [transactions, filterDate, filterCategory]);
+  }, [transactions, filterDate, filterCategory, searchQuery]);
+
+  const groupedByDate = useMemo(() => {
+    const groups: { date: string; transactions: Transaction[] }[] = [];
+    for (const t of filteredTransactions) {
+      const last = groups[groups.length - 1];
+      if (last && last.date === t.date) {
+        last.transactions.push(t);
+      } else {
+        groups.push({ date: t.date, transactions: [t] });
+      }
+    }
+    return groups;
+  }, [filteredTransactions]);
 
   return (
     <div>
@@ -76,9 +110,19 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
             </button>
           )}
         </div>
+        <div className="relative mt-3">
+          <FileSearch className="absolute left-3 top-2.5 text-gray-400 pointer-events-none" size={18} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search description..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-gray-700"
+          />
+        </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-1">
         {filteredTransactions.length === 0 ? (
           <div className="text-center py-12 text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-200">
             <Cat className="mx-auto w-12 h-12 mb-2 opacity-50" />
@@ -90,8 +134,20 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
             )}
           </div>
         ) : (
-          filteredTransactions.map((t) => (
-            <TransactionItem key={t.id} transaction={t} />
+          groupedByDate.map((group) => (
+            <div key={group.date}>
+              <div className="flex items-center gap-3 py-3 mt-2 first:mt-0">
+                <div className="w-2.5 h-2.5 rounded-full bg-cat-orange shrink-0" />
+                <span className="text-sm font-bold text-cat-dark/70 tracking-wide">{formatDateLabel(group.date)}</span>
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400 font-medium">{group.transactions.length} item{group.transactions.length > 1 ? "s" : ""}</span>
+              </div>
+              <div className="space-y-3 ml-1 pl-4 border-l-2 border-cat-orange/20">
+                {group.transactions.map((t) => (
+                  <TransactionItem key={t.id} transaction={t} />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>

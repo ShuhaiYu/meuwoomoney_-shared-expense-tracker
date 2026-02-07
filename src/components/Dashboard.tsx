@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { FileText } from "lucide-react";
+import { UserButton } from "@neondatabase/auth/react";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
@@ -52,12 +53,15 @@ export function Dashboard({ initialTransactions }: DashboardProps) {
             </div>
             <h1 className="text-2xl font-bold text-cat-dark tracking-tight">MeuwooMoney</h1>
           </div>
-          <button
-            onClick={() => setIsReportOpen(true)}
-            className="flex items-center gap-2 bg-cat-dark text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-lg shadow-cat-dark/20"
-          >
-            <FileText size={16} /> Monthly Report
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsReportOpen(true)}
+              className="flex items-center gap-2 bg-cat-dark text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-lg shadow-cat-dark/20"
+            >
+              <FileText size={16} /> Monthly Report
+            </button>
+            <UserButton />
+          </div>
         </div>
       </header>
 

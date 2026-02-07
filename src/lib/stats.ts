@@ -20,29 +20,31 @@ export function computeStats(filteredTransactions: Transaction[]): MonthlyStats 
   };
 
   filteredTransactions.forEach((t) => {
-    categoryBreakdown[t.category as Category] = (categoryBreakdown[t.category as Category] || 0) + t.amount;
+    const amt = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+
+    categoryBreakdown[t.category as Category] = (categoryBreakdown[t.category as Category] || 0) + amt;
 
     let felixPortion = 0;
     let sophiePortion = 0;
 
     if (t.payer === "Shared") {
-      totalShared += t.amount;
-      felixPortion = t.amount / 2;
-      sophiePortion = t.amount / 2;
+      totalShared += amt;
+      felixPortion = amt / 2;
+      sophiePortion = amt / 2;
     } else if (t.payer === "Felix") {
-      totalFelixPersonal += t.amount;
-      felixPortion = t.amount;
+      totalFelixPersonal += amt;
+      felixPortion = amt;
     } else if (t.payer === "Sophie") {
-      totalSophiePersonal += t.amount;
-      sophiePortion = t.amount;
+      totalSophiePersonal += amt;
+      sophiePortion = amt;
     } else if (t.payer === "SharedAll") {
-      totalSharedAll += t.amount;
-      felixPortion = t.amount / 3;
-      sophiePortion = t.amount / 3;
+      totalSharedAll += amt;
+      felixPortion = amt / 3;
+      sophiePortion = amt / 3;
     } else if (t.payer === "Lydia") {
-      totalLydiaPaid += t.amount;
-      felixPortion = t.amount / 3;
-      sophiePortion = t.amount / 3;
+      totalLydiaPaid += amt;
+      felixPortion = amt / 3;
+      sophiePortion = amt / 3;
     }
 
     felixCategoryBreakdown[t.category as Category] += felixPortion;

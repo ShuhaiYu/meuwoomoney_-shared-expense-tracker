@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { neonAuth } from "@neondatabase/auth/next/server";
 import type { MonthlyStats, Category } from "@/lib/types";
 import type { Transaction } from "@/lib/schema";
 import { CATEGORY_LIMITS } from "@/lib/constants";
@@ -7,6 +8,11 @@ import { CATEGORY_LIMITS } from "@/lib/constants";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(request: NextRequest) {
+  const { session } = await neonAuth();
+  if (!session) {
+    return NextResponse.json({ advice: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { stats, transactions }: { stats: MonthlyStats; transactions: Transaction[] } = await request.json();
 

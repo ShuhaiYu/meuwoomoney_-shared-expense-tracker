@@ -77,7 +77,7 @@ export async function GET(request: Request) {
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: `MeuwooMoney <${["bingbing", "wanwan", "tiaotiao", "banban"][Math.floor(Math.random() * 4)]}@meuwoo.com>`,
-    to: ["yushuhai1998@gmail.com", "weiqisophie@gmail.com"],
+    to: process.env.NOTIFICATION_EMAILS!.split(","),
     subject,
     html,
     attachments: [

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { Plus, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { CATEGORIES, FELIX, SOPHIE, LYDIA } from "@/lib/constants";
 import type { Category, PayerType } from "@/lib/types";
 import { addTransaction } from "@/lib/actions";
@@ -48,7 +49,7 @@ export function TransactionForm() {
     if (!amount || !description) return;
 
     startTransition(async () => {
-      await addTransaction({
+      const result = await addTransaction({
         date: selectedDate,
         amount: parseFloat(amount),
         category,
@@ -56,13 +57,18 @@ export function TransactionForm() {
         description,
       });
 
-      setAmount("");
-      setDescription("");
-      setCategory("Food");
-      setPayer("Shared");
-      setSelectedDate(todayStr);
-      setWeekOffset(0);
-      setIsExpanded(false);
+      if (result.success) {
+        toast.success("Saved!");
+        setAmount("");
+        setDescription("");
+        setCategory("Food");
+        setPayer("Shared");
+        setSelectedDate(todayStr);
+        setWeekOffset(0);
+        setIsExpanded(false);
+      } else {
+        toast.error(result.error || "Failed to save");
+      }
     });
   };
 

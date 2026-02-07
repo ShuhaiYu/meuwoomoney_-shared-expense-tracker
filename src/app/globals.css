@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@neondatabase/auth/ui/tailwind";
 
 @theme {
   --color-cat-cream: #FDF6E3;

@@ -1,15 +1,19 @@
 "use client";
 
-import { useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Trash2, Pencil, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import type { Transaction } from "@/lib/schema";
-import type { PayerType } from "@/lib/types";
-import { deleteTransaction } from "@/lib/actions";
+import type { PayerType, Category } from "@/lib/types";
+import { CATEGORIES } from "@/lib/constants";
+import { deleteTransaction, updateTransaction } from "@/lib/actions";
 import { CategoryIcon } from "./CatIcon";
 
 interface TransactionItemProps {
   transaction: Transaction;
 }
+
+const PAYERS: PayerType[] = ["Shared", "Felix", "Sophie", "SharedAll", "Lydia"];
 
 function getPayerBadge(payer: PayerType) {
   if (payer === "Shared") return <span className="bg-cat-orange/20 text-cat-brown px-2 py-1 rounded-md text-xs font-bold border border-cat-orange/30">Shared</span>;
@@ -21,12 +25,143 @@ function getPayerBadge(payer: PayerType) {
 
 export function TransactionItem({ transaction: t }: TransactionItemProps) {
   const [isPending, startTransition] = useTransition();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Edit state
+  const [editDate, setEditDate] = useState(t.date);
+  const [editAmount, setEditAmount] = useState(String(typeof t.amount === "string" ? t.amount : t.amount));
+  const [editCategory, setEditCategory] = useState(t.category);
+  const [editPayer, setEditPayer] = useState(t.payer);
+  const [editDescription, setEditDescription] = useState(t.description);
+
+  const amount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
 
   const handleDelete = () => {
     startTransition(async () => {
-      await deleteTransaction(t.id);
+      const result = await deleteTransaction(t.id);
+      if (result.success) {
+        toast.success("Deleted");
+      } else {
+        toast.error(result.error || "Failed to delete");
+      }
+      setConfirmingDelete(false);
     });
   };
+
+  const handleSaveEdit = () => {
+    startTransition(async () => {
+      const result = await updateTransaction(t.id, {
+        date: editDate,
+        amount: parseFloat(editAmount),
+        category: editCategory,
+        payer: editPayer,
+        description: editDescription,
+      });
+      if (result.success) {
+        toast.success("Updated");
+        setIsEditing(false);
+      } else {
+        toast.error(result.error || "Failed to update");
+      }
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditDate(t.date);
+    setEditAmount(String(typeof t.amount === "string" ? t.amount : t.amount));
+    setEditCategory(t.category);
+    setEditPayer(t.payer);
+    setEditDescription(t.description);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className={`bg-white p-4 rounded-2xl shadow-sm border-2 border-cat-orange/30 space-y-3 ${isPending ? "opacity-50" : ""}`}>
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="date"
+            value={editDate}
+            onChange={(e) => setEditDate(e.target.value)}
+            className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+          />
+          <div className="relative">
+            <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
+            <input
+              type="number"
+              step="0.01"
+              value={editAmount}
+              onChange={(e) => setEditAmount(e.target.value)}
+              className="w-full pl-7 pr-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <select
+            value={editCategory}
+            onChange={(e) => setEditCategory(e.target.value as Category)}
+            className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+          >
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            value={editPayer}
+            onChange={(e) => setEditPayer(e.target.value as PayerType)}
+            className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+          >
+            {PAYERS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <input
+          type="text"
+          value={editDescription}
+          onChange={(e) => setEditDescription(e.target.value)}
+          className="w-full px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+        />
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={handleCancelEdit}
+            disabled={isPending}
+            className="px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition flex items-center gap-1"
+          >
+            <X size={14} /> Cancel
+          </button>
+          <button
+            onClick={handleSaveEdit}
+            disabled={isPending}
+            className="px-3 py-1.5 text-sm bg-cat-dark text-white rounded-xl hover:bg-gray-800 transition flex items-center gap-1"
+          >
+            <Check size={14} /> Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (confirmingDelete) {
+    return (
+      <div className={`bg-red-50 p-4 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between ${isPending ? "opacity-50" : ""}`}>
+        <span className="text-sm font-bold text-red-700">Delete &quot;{t.description}&quot;?</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDelete}
+            disabled={isPending}
+            className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-bold"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => setConfirmingDelete(false)}
+            disabled={isPending}
+            className="px-3 py-1.5 text-sm bg-white text-gray-600 rounded-xl hover:bg-gray-100 transition font-bold border border-gray-200"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:shadow-md transition ${isPending ? "opacity-50" : ""}`}>
@@ -43,12 +178,19 @@ export function TransactionItem({ transaction: t }: TransactionItemProps) {
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <span className="font-bold text-lg text-cat-dark">-${t.amount.toFixed(2)}</span>
+      <div className="flex items-center gap-3">
+        <span className="font-bold text-lg text-cat-dark">-${amount.toFixed(2)}</span>
         <button
-          onClick={handleDelete}
-          disabled={isPending}
-          className="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
+          onClick={() => setIsEditing(true)}
+          className="text-gray-300 hover:text-cat-orange transition"
+          title="Edit"
+        >
+          <Pencil size={16} />
+        </button>
+        <button
+          onClick={() => setConfirmingDelete(true)}
+          className="text-gray-300 hover:text-red-400 transition"
+          title="Delete"
         >
           <Trash2 size={18} />
         </button>

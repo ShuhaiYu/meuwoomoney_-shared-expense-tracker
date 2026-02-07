@@ -105,7 +105,8 @@ export function ReportModal({ isOpen, onClose, stats, transactions }: ReportModa
   const renderTransactionRow = (t: Transaction, colorClass: string) => {
     const isShared = t.payer === "Shared";
     const isThreeWay = t.payer === "SharedAll" || t.payer === "Lydia";
-    const displayAmount = isThreeWay ? t.amount / 3 : isShared ? t.amount / 2 : t.amount;
+    const rawAmount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+    const displayAmount = isThreeWay ? rawAmount / 3 : isShared ? rawAmount / 2 : rawAmount;
     const isSplit = isShared || isThreeWay;
 
     const payerBadgeClass = isThreeWay
@@ -133,7 +134,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions }: ReportModa
         <div className="text-right">
           <span className="font-bold text-gray-800 block">-${displayAmount.toFixed(2)}</span>
           {isSplit && (
-            <span className="text-[10px] text-gray-400 block">Total: -${t.amount.toFixed(2)}</span>
+            <span className="text-[10px] text-gray-400 block">Total: -${rawAmount.toFixed(2)}</span>
           )}
         </div>
       </div>
