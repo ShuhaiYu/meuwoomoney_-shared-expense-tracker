@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { FileText } from "lucide-react";
-import { UserButton } from "@neondatabase/auth/react";
+import { UserMenu } from "./UserMenu";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
@@ -60,7 +60,7 @@ export function Dashboard({ initialTransactions }: DashboardProps) {
             >
               <FileText size={16} /> Monthly Report
             </button>
-            <UserButton />
+            <UserMenu />
           </div>
         </div>
       </header>

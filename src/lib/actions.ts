@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "./auth/server";
 import { db } from "./db";
@@ -19,10 +18,15 @@ const transactionSchema = z.object({
   description: z.string().min(1, "Description is required").max(200, "Description too long"),
 });
 
-async function requireAuth() {
-  const { data: session } = await auth.getSession();
-  if (!session) {
-    redirect("/auth/sign-in");
+async function requireAuth(): Promise<{ success: boolean; error?: string } | null> {
+  try {
+    const { data: session } = await auth.getSession();
+    if (!session) {
+      return { success: false, error: "Not authenticated" };
+    }
+    return null;
+  } catch {
+    return { success: false, error: "Authentication failed" };
   }
 }
 
@@ -33,7 +37,8 @@ export async function addTransaction(data: {
   payer: string;
   description: string;
 }): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  const authError = await requireAuth();
+  if (authError) return authError;
   try {
     const parsed = transactionSchema.parse(data);
     await db.insert(transactions).values({
@@ -54,7 +59,8 @@ export async function addTransaction(data: {
 }
 
 export async function deleteTransaction(id: string): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  const authError = await requireAuth();
+  if (authError) return authError;
   try {
     if (!id || typeof id !== "string") {
       return { success: false, error: "Invalid transaction ID" };
@@ -77,7 +83,8 @@ export async function updateTransaction(
     description: string;
   }
 ): Promise<{ success: boolean; error?: string }> {
-  await requireAuth();
+  const authError = await requireAuth();
+  if (authError) return authError;
   try {
     if (!id || typeof id !== "string") {
       return { success: false, error: "Invalid transaction ID" };
