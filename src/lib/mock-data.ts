@@ -1,0 +1,152 @@
+import type { Transaction } from "./schema";
+
+function fmt(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return fmt(d);
+}
+
+export const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: "demo-1",
+    date: daysAgo(0),
+    amount: "45.80",
+    category: "Food",
+    payer: "Shared",
+    description: "Grocery run at Trader Joe's",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-2",
+    date: daysAgo(1),
+    amount: "12.50",
+    category: "Transport",
+    payer: "Felix",
+    description: "Uber to downtown",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-3",
+    date: daysAgo(2),
+    amount: "2000.00",
+    category: "Rent",
+    payer: "Shared",
+    description: "Monthly rent",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-4",
+    date: daysAgo(3),
+    amount: "89.99",
+    category: "Shopping",
+    payer: "Sophie",
+    description: "New running shoes",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-5",
+    date: daysAgo(4),
+    amount: "150.00",
+    category: "Utilities",
+    payer: "SharedAll",
+    description: "Electric bill",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-6",
+    date: daysAgo(5),
+    amount: "35.00",
+    category: "Cats",
+    payer: "Shared",
+    description: "Cat food & treats",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-7",
+    date: daysAgo(6),
+    amount: "28.50",
+    category: "Entertainment",
+    payer: "Felix",
+    description: "Movie tickets",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-8",
+    date: daysAgo(8),
+    amount: "65.00",
+    category: "Food",
+    payer: "Lydia",
+    description: "Group dinner at Thai place",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-9",
+    date: daysAgo(10),
+    amount: "22.00",
+    category: "Transport",
+    payer: "Sophie",
+    description: "Monthly bus pass top-up",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-10",
+    date: daysAgo(12),
+    amount: "180.00",
+    category: "Shopping",
+    payer: "Shared",
+    description: "Household supplies from Target",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-11",
+    date: daysAgo(15),
+    amount: "55.00",
+    category: "Cats",
+    payer: "Shared",
+    description: "Vet checkup — Mimi",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-12",
+    date: daysAgo(18),
+    amount: "42.00",
+    category: "Entertainment",
+    payer: "SharedAll",
+    description: "Board game night snacks",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-13",
+    date: daysAgo(22),
+    amount: "95.00",
+    category: "Utilities",
+    payer: "Shared",
+    description: "Internet bill",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-14",
+    date: daysAgo(28),
+    amount: "38.75",
+    category: "Food",
+    payer: "Felix",
+    description: "Lunch with coworkers",
+    createdAt: new Date(),
+  },
+  {
+    id: "demo-15",
+    date: daysAgo(35),
+    amount: "200.00",
+    category: "Other",
+    payer: "Sophie",
+    description: "Birthday gift for mom",
+    createdAt: new Date(),
+  },
+];

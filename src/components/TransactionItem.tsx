@@ -11,6 +11,8 @@ import { CategoryIcon } from "./CatIcon";
 
 interface TransactionItemProps {
   transaction: Transaction;
+  onDelete?: (id: string) => { success: boolean; error?: string };
+  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
 }
 
 const PAYERS: PayerType[] = ["Shared", "Felix", "Sophie", "SharedAll", "Lydia"];
@@ -23,7 +25,7 @@ function getPayerBadge(payer: PayerType) {
   return <span className="bg-cat-brown/20 text-cat-brown px-2 py-1 rounded-md text-xs font-bold border border-cat-brown/30">Sophie</span>;
 }
 
-export function TransactionItem({ transaction: t }: TransactionItemProps) {
+export function TransactionItem({ transaction: t, onDelete, onUpdate }: TransactionItemProps) {
   const [isPending, startTransition] = useTransition();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -38,6 +40,16 @@ export function TransactionItem({ transaction: t }: TransactionItemProps) {
   const amount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
 
   const handleDelete = () => {
+    if (onDelete) {
+      const result = onDelete(t.id);
+      if (result.success) {
+        toast.success("Deleted");
+      } else {
+        toast.error(result.error || "Failed to delete");
+      }
+      setConfirmingDelete(false);
+      return;
+    }
     startTransition(async () => {
       const result = await deleteTransaction(t.id);
       if (result.success) {
@@ -50,14 +62,27 @@ export function TransactionItem({ transaction: t }: TransactionItemProps) {
   };
 
   const handleSaveEdit = () => {
+    const data = {
+      date: editDate,
+      amount: parseFloat(editAmount),
+      category: editCategory,
+      payer: editPayer,
+      description: editDescription,
+    };
+
+    if (onUpdate) {
+      const result = onUpdate(t.id, data);
+      if (result.success) {
+        toast.success("Updated");
+        setIsEditing(false);
+      } else {
+        toast.error(result.error || "Failed to update");
+      }
+      return;
+    }
+
     startTransition(async () => {
-      const result = await updateTransaction(t.id, {
-        date: editDate,
-        amount: parseFloat(editAmount),
-        category: editCategory,
-        payer: editPayer,
-        description: editDescription,
-      });
+      const result = await updateTransaction(t.id, data);
       if (result.success) {
         toast.success("Updated");
         setIsEditing(false);

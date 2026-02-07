@@ -8,7 +8,11 @@ import type { Category, PayerType } from "@/lib/types";
 import { addTransaction } from "@/lib/actions";
 import { PawIcon } from "./CatIcon";
 
-export function TransactionForm() {
+interface TransactionFormProps {
+  onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
+}
+
+export function TransactionForm({ onAdd }: TransactionFormProps) {
   const formatDate = (d: Date) => {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, "0");
@@ -48,14 +52,33 @@ export function TransactionForm() {
     e.preventDefault();
     if (!amount || !description) return;
 
+    const data = {
+      date: selectedDate,
+      amount: parseFloat(amount),
+      category,
+      payer,
+      description,
+    };
+
+    if (onAdd) {
+      const result = onAdd(data);
+      if (result.success) {
+        toast.success("Saved!");
+        setAmount("");
+        setDescription("");
+        setCategory("Food");
+        setPayer("Shared");
+        setSelectedDate(todayStr);
+        setWeekOffset(0);
+        setIsExpanded(false);
+      } else {
+        toast.error(result.error || "Failed to save");
+      }
+      return;
+    }
+
     startTransition(async () => {
-      const result = await addTransaction({
-        date: selectedDate,
-        amount: parseFloat(amount),
-        category,
-        payer,
-        description,
-      });
+      const result = await addTransaction(data);
 
       if (result.success) {
         toast.success("Saved!");

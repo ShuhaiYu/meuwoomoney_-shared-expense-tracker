@@ -3,9 +3,9 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { db } from "./db";
 import { transactions } from "./schema";
+import { isApprovedUser } from "./auth-check";
 
 const PAYERS = ["Shared", "Felix", "Sophie", "SharedAll", "Lydia"] as const;
 const CATEGORIES = ["Food", "Rent", "Utilities", "Cats", "Shopping", "Entertainment", "Transport", "Other"] as const;
@@ -19,10 +19,9 @@ const transactionSchema = z.object({
 });
 
 async function requireAuth(): Promise<{ success: boolean; error?: string } | null> {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("__Secure-neon-auth.session_token");
-  if (!sessionToken?.value) {
-    return { success: false, error: "Not authenticated" };
+  const approved = await isApprovedUser();
+  if (!approved) {
+    return { success: false, error: "Not authorized" };
   }
   return null;
 }

@@ -13,6 +13,8 @@ interface TransactionListProps {
   setFilterDate: (date: string) => void;
   filterCategory: Category | "All";
   setFilterCategory: (cat: Category | "All") => void;
+  onDelete?: (id: string) => { success: boolean; error?: string };
+  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -32,7 +34,7 @@ function formatDateLabel(dateStr: string): string {
   return `${weekday}, ${monthName} ${day}, ${year}`;
 }
 
-export function TransactionList({ transactions, filterDate, setFilterDate, filterCategory, setFilterCategory }: TransactionListProps) {
+export function TransactionList({ transactions, filterDate, setFilterDate, filterCategory, setFilterCategory, onDelete, onUpdate }: TransactionListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const hasActiveFilters = filterDate !== "" || filterCategory !== "All" || searchQuery !== "";
 
@@ -144,7 +146,7 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
               </div>
               <div className="space-y-3 ml-1 pl-4 border-l-2 border-cat-orange/20">
                 {group.transactions.map((t) => (
-                  <TransactionItem key={t.id} transaction={t} />
+                  <TransactionItem key={t.id} transaction={t} onDelete={onDelete} onUpdate={onUpdate} />
                 ))}
               </div>
             </div>

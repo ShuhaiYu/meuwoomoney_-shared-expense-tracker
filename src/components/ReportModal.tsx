@@ -13,9 +13,10 @@ interface ReportModalProps {
   onClose: () => void;
   transactions: Transaction[];
   stats: MonthlyStats;
+  isGuest?: boolean;
 }
 
-export function ReportModal({ isOpen, onClose, stats, transactions }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: ReportModalProps) {
   const [advice, setAdvice] = useState<string>("");
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [showAllFelix, setShowAllFelix] = useState(false);
@@ -24,7 +25,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions }: ReportModa
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && !advice) {
+    if (isOpen && !advice && !isGuest) {
       fetchAdvice();
     }
   }, [isOpen]);
@@ -378,7 +379,19 @@ export function ReportModal({ isOpen, onClose, stats, transactions }: ReportModa
                 <h2 className="text-2xl font-bold text-cat-dark">Professor Paws&apos; Advice</h2>
               </div>
 
-              {loadingAdvice ? (
+              {isGuest ? (
+                <div className="prose prose-orange max-w-none bg-yellow-50 p-8 rounded-3xl border-2 border-yellow-200 relative">
+                  <span className="absolute top-4 left-4 text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
+                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">
+                    AI-powered financial advice from Professor Paws is available for signed-in users. Sign in to get personalized tips based on your spending habits!
+                  </div>
+                  <div className="mt-6 flex justify-end">
+                    <a href="/auth/sign-in" className="text-sm font-bold text-cat-orange hover:underline">
+                      Sign in for AI advice
+                    </a>
+                  </div>
+                </div>
+              ) : loadingAdvice ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <Loader2 className="animate-spin mb-4" size={48} />
                   <p>Consulting with the Grand Cat Council...</p>

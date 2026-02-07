@@ -9,6 +9,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <NeonAuthUIProvider
       authClient={authClient as any}
       social={{ providers: ["google"] }}
+      redirectTo="/"
     >
       {children}
     </NeonAuthUIProvider>
