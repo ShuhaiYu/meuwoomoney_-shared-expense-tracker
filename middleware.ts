@@ -9,6 +9,11 @@ export default function middleware(request: NextRequest) {
     request.cookies.get("neon-auth.session_token");
 
   if (!sessionToken?.value) {
+    // Allow OAuth callback through so client-side auth can process the verifier
+    if (request.nextUrl.searchParams.has("neon_auth_session_verifier")) {
+      console.log("[middleware] No session token but has verifier, passing through");
+      return NextResponse.next();
+    }
     const signInUrl = new URL("/auth/sign-in", request.url);
     console.log("[middleware] No session token, redirecting to sign-in");
     return NextResponse.redirect(signInUrl);
