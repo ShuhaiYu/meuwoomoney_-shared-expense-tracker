@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { auth } from "./auth/server";
+import { cookies } from "next/headers";
 import { db } from "./db";
 import { transactions } from "./schema";
 
@@ -19,15 +19,12 @@ const transactionSchema = z.object({
 });
 
 async function requireAuth(): Promise<{ success: boolean; error?: string } | null> {
-  try {
-    const { data: session } = await auth.getSession();
-    if (!session) {
-      return { success: false, error: "Not authenticated" };
-    }
-    return null;
-  } catch {
-    return { success: false, error: "Authentication failed" };
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("__Secure-neon-auth.session_token");
+  if (!sessionToken?.value) {
+    return { success: false, error: "Not authenticated" };
   }
+  return null;
 }
 
 export async function addTransaction(data: {
