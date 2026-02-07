@@ -51,11 +51,11 @@ export function ChartsSection({ breakdown, limitMultiplier = 1 }: ChartsSectionP
   });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-64 md:h-80">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
         <h3 className="text-center font-bold text-gray-600 mb-4 text-sm uppercase tracking-wider">Distribution</h3>
         {pieData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie
                 data={pieData}
@@ -80,7 +80,7 @@ export function ChartsSection({ breakdown, limitMultiplier = 1 }: ChartsSectionP
 
       <div>
         <h3 className="text-center font-bold text-gray-600 mb-4 text-sm uppercase tracking-wider">Budget Limits</h3>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={barData} layout="vertical" margin={{ left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" hide />

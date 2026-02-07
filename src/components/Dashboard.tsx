@@ -110,21 +110,21 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
             <div className="bg-cat-orange text-white p-2 rounded-xl">
               <PawIcon className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold text-cat-dark tracking-tight">MeuwooMoney</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-cat-dark tracking-tight">MeuwooMoney</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsReportOpen(true)}
-              className="flex items-center gap-2 bg-cat-dark text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-lg shadow-cat-dark/20"
+              className="flex items-center gap-2 bg-cat-dark text-white p-2.5 sm:px-4 sm:py-2 rounded-xl text-sm font-bold hover:bg-gray-800 transition shadow-lg shadow-cat-dark/20"
             >
-              <FileText size={16} /> Monthly Report
+              <FileText size={16} /> <span className="hidden sm:inline">Monthly Report</span>
             </button>
             {isGuest && !isRestricted ? (
               <a
                 href="/auth/sign-in"
-                className="flex items-center gap-2 bg-cat-orange text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-cat-brown transition"
+                className="flex items-center gap-2 bg-cat-orange text-white p-2.5 sm:px-4 sm:py-2 rounded-xl text-sm font-bold hover:bg-cat-brown transition"
               >
-                <LogIn size={16} /> Sign In
+                <LogIn size={16} /> <span className="hidden sm:inline">Sign In</span>
               </a>
             ) : isRestricted && restrictedUser ? (
               <RestrictedAvatar user={restrictedUser} />

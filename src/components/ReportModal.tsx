@@ -119,10 +119,10 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
     const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
 
     return (
-      <div key={t.id} className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-xl border border-gray-100">
-        <div className="flex flex-col gap-1">
-          <span className="font-bold text-gray-700">{t.description}</span>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+      <div key={t.id} className="flex justify-between items-center text-sm p-2.5 sm:p-3 bg-gray-50 rounded-xl border border-gray-100">
+        <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <span className="font-bold text-gray-700 truncate">{t.description}</span>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-400">
             <div className="flex items-center gap-1"><Calendar size={10} /> {t.date}</div>
             <span className={`px-1.5 py-0.5 rounded-md font-bold uppercase text-[10px] tracking-wider ${payerBadgeClass}`}>
               {payerLabel}
@@ -132,7 +132,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
             </span>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0 ml-2">
           <span className="font-bold text-gray-800 block">-${displayAmount.toFixed(2)}</span>
           {isSplit && (
             <span className="text-[10px] text-gray-400 block">Total: -${rawAmount.toFixed(2)}</span>
@@ -145,49 +145,49 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto">
+      <div className="bg-white w-full sm:max-w-4xl rounded-t-2xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         {/* Header Control */}
-        <div className="p-4 bg-cat-dark text-white flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Cat /> Monthly Report Preview
+        <div className="p-3 sm:p-4 bg-cat-dark text-white flex justify-between items-center shrink-0">
+          <h2 className="text-base sm:text-xl font-bold flex items-center gap-2">
+            <Cat size={20} /> <span className="hidden sm:inline">Monthly Report Preview</span><span className="sm:hidden">Report</span>
           </h2>
           <div className="flex gap-2">
             <button
               onClick={generatePDF}
-              className="bg-cat-orange hover:bg-cat-brown text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition"
+              className="bg-cat-orange hover:bg-cat-brown text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-bold flex items-center gap-2 text-sm transition"
             >
-              <Download size={16} /> Save PDF
+              <Download size={16} /> <span className="hidden sm:inline">Save</span> PDF
             </button>
-            <button onClick={onClose} className="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition">
+            <button onClick={onClose} className="bg-white/10 hover:bg-white/20 p-1.5 sm:p-2 rounded-lg transition">
               <X size={20} />
             </button>
           </div>
         </div>
 
         {/* Scrollable Report Content */}
-        <div className="overflow-y-auto p-8 bg-cat-cream" id="report-container">
-          <div ref={reportRef} className="bg-white max-w-3xl mx-auto min-h-[1000px] p-8 shadow-sm space-y-12">
+        <div className="overflow-y-auto p-3 sm:p-8 bg-cat-cream" id="report-container">
+          <div ref={reportRef} className="bg-white max-w-3xl mx-auto p-4 sm:p-8 shadow-sm space-y-8 sm:space-y-12">
 
             {/* Page 1: Shared Overview */}
-            <section className="space-y-6 border-b-4 border-dashed border-cat-orange/30 pb-12">
+            <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-orange/30 pb-8 sm:pb-12">
               <div className="text-center space-y-2">
-                <h1 className="text-4xl font-bold text-cat-dark">Monthly Meow Report</h1>
-                <p className="text-gray-500">Shared Expenses & Family Budget</p>
-                <div className="flex justify-center my-4">
-                  <div className="w-16 h-16 bg-cat-orange/20 rounded-full flex items-center justify-center">
-                    <PawIcon className="w-8 h-8 text-cat-orange" />
+                <h1 className="text-2xl sm:text-4xl font-bold text-cat-dark">Monthly Meow Report</h1>
+                <p className="text-sm sm:text-base text-gray-500">Shared Expenses & Family Budget</p>
+                <div className="flex justify-center my-3 sm:my-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-cat-orange/20 rounded-full flex items-center justify-center">
+                    <PawIcon className="w-6 h-6 sm:w-8 sm:h-8 text-cat-orange" />
                   </div>
                 </div>
               </div>
 
               {/* Savings & Goals Card */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100 flex flex-col sm:flex-row gap-8">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 sm:p-6 rounded-2xl border border-green-100 flex flex-col sm:flex-row gap-4 sm:gap-8">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 text-green-700 font-bold mb-2">
                     <PiggyBank size={20} /> Household Savings
                   </div>
-                  <p className={`text-4xl font-bold ${stats.netSavings >= 0 ? "text-green-600" : "text-red-500"}`}>
+                  <p className={`text-3xl sm:text-4xl font-bold ${stats.netSavings >= 0 ? "text-green-600" : "text-red-500"}`}>
                     ${stats.netSavings.toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
@@ -214,24 +214,24 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
             </section>
 
             {/* Page 2: Felix */}
-            <section className="space-y-6 border-b-4 border-dashed border-cat-teal/30 pb-12 break-before-page">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">{FELIX.avatar}</div>
+            <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-teal/30 pb-8 sm:pb-12 break-before-page">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl">{FELIX.avatar}</div>
                 <div>
-                  <h2 className="text-2xl font-bold text-cat-dark">{FELIX.name}&apos;s Breakdown</h2>
-                  <p className="text-gray-500">The Boy Cat</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">{FELIX.name}&apos;s Breakdown</h2>
+                  <p className="text-sm text-gray-500">The Boy Cat</p>
                 </div>
               </div>
 
-              <div className="bg-cat-teal/5 p-6 rounded-2xl border border-cat-teal/20">
+              <div className="bg-cat-teal/5 p-4 sm:p-6 rounded-2xl border border-cat-teal/20">
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <p className="text-sm font-bold text-gray-500">Monthly Contribution</p>
-                    <p className="text-3xl font-bold text-cat-teal">${FELIX.monthlyContribution}</p>
+                    <p className="text-xs sm:text-sm font-bold text-gray-500">Monthly Contribution</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-cat-teal">${FELIX.monthlyContribution}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-500">Remaining</p>
-                    <p className={`text-2xl font-bold ${FELIX.monthlyContribution - stats.felixTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
+                    <p className="text-xs sm:text-sm font-bold text-gray-500">Remaining</p>
+                    <p className={`text-xl sm:text-2xl font-bold ${FELIX.monthlyContribution - stats.felixTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
                       ${(FELIX.monthlyContribution - stats.felixTotalResponsibility).toFixed(2)}
                     </p>
                   </div>
@@ -247,13 +247,13 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                 </p>
               </div>
 
-              <div className="mt-8 mb-8">
-                <h3 className="font-bold text-cat-dark mb-4">Expense Distribution & Limits Analysis</h3>
+              <div className="mt-6 sm:mt-8 mb-6 sm:mb-8">
+                <h3 className="font-bold text-cat-dark mb-4 text-sm sm:text-base">Expense Distribution & Limits Analysis</h3>
                 <ChartsSection breakdown={stats.felixCategoryBreakdown} limitMultiplier={0.5} />
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-bold text-cat-dark">Personal & Shared Expenses</h3>
+                <h3 className="font-bold text-cat-dark text-sm sm:text-base">Personal & Shared Expenses</h3>
                 {felixTx.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No expenses recorded.</p>
                 ) : (
@@ -275,24 +275,24 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
             </section>
 
             {/* Page 3: Sophie */}
-            <section className="space-y-6 border-b-4 border-dashed border-cat-brown/30 pb-12 break-before-page">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl">{SOPHIE.avatar}</div>
+            <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-brown/30 pb-8 sm:pb-12 break-before-page">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl">{SOPHIE.avatar}</div>
                 <div>
-                  <h2 className="text-2xl font-bold text-cat-dark">{SOPHIE.name}&apos;s Breakdown</h2>
-                  <p className="text-gray-500">The Girl Cat</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">{SOPHIE.name}&apos;s Breakdown</h2>
+                  <p className="text-sm text-gray-500">The Girl Cat</p>
                 </div>
               </div>
 
-              <div className="bg-cat-brown/5 p-6 rounded-2xl border border-cat-brown/20">
+              <div className="bg-cat-brown/5 p-4 sm:p-6 rounded-2xl border border-cat-brown/20">
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <p className="text-sm font-bold text-gray-500">Monthly Contribution</p>
-                    <p className="text-3xl font-bold text-cat-brown">${SOPHIE.monthlyContribution}</p>
+                    <p className="text-xs sm:text-sm font-bold text-gray-500">Monthly Contribution</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-cat-brown">${SOPHIE.monthlyContribution}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-500">Remaining</p>
-                    <p className={`text-2xl font-bold ${SOPHIE.monthlyContribution - stats.sophieTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
+                    <p className="text-xs sm:text-sm font-bold text-gray-500">Remaining</p>
+                    <p className={`text-xl sm:text-2xl font-bold ${SOPHIE.monthlyContribution - stats.sophieTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
                       ${(SOPHIE.monthlyContribution - stats.sophieTotalResponsibility).toFixed(2)}
                     </p>
                   </div>
@@ -308,13 +308,13 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                 </p>
               </div>
 
-              <div className="mt-8 mb-8">
-                <h3 className="font-bold text-cat-dark mb-4">Expense Distribution & Limits Analysis</h3>
+              <div className="mt-6 sm:mt-8 mb-6 sm:mb-8">
+                <h3 className="font-bold text-cat-dark mb-4 text-sm sm:text-base">Expense Distribution & Limits Analysis</h3>
                 <ChartsSection breakdown={stats.sophieCategoryBreakdown} limitMultiplier={0.5} />
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-bold text-cat-dark">Personal & Shared Expenses</h3>
+                <h3 className="font-bold text-cat-dark text-sm sm:text-base">Personal & Shared Expenses</h3>
                 {sophieTx.length === 0 ? (
                   <p className="text-sm text-gray-400 italic">No expenses recorded.</p>
                 ) : (
@@ -337,73 +337,79 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
 
             {/* Page 4: Lydia Settlement */}
             {(stats.totalSharedAll > 0 || stats.totalLydiaPaid > 0) && (
-              <section className="space-y-6 border-b-4 border-dashed border-cat-purple/30 pb-12 break-before-page">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">{LYDIA.avatar}</div>
+              <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-purple/30 pb-8 sm:pb-12 break-before-page">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-4xl">{LYDIA.avatar}</div>
                   <div>
-                    <h2 className="text-2xl font-bold text-cat-dark">Roommate Settlement</h2>
-                    <p className="text-gray-500">{LYDIA.name}&apos;s Shared Expenses</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">Roommate Settlement</h2>
+                    <p className="text-sm text-gray-500">{LYDIA.name}&apos;s Shared Expenses</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-cat-purple/5 p-4 rounded-2xl border border-cat-purple/20 text-center">
-                    <p className="text-xs font-bold text-gray-500 mb-1">{LYDIA.name} Owes</p>
-                    <p className="text-2xl font-bold text-cat-purple">${stats.lydiaOwes.toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">1/3 of couple-paid</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
+                    <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Owes</p>
+                    <div>
+                      <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.lydiaOwes.toFixed(2)}</p>
+                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">1/3 of couple-paid</p>
+                    </div>
                   </div>
-                  <div className="bg-cat-purple/5 p-4 rounded-2xl border border-cat-purple/20 text-center">
-                    <p className="text-xs font-bold text-gray-500 mb-1">Couple Owes</p>
-                    <p className="text-2xl font-bold text-cat-purple">${stats.coupleOwesLydia.toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">2/3 of Lydia-paid</p>
+                  <div className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
+                    <p className="text-xs font-bold text-gray-500 sm:mb-1">Couple Owes</p>
+                    <div>
+                      <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.coupleOwesLydia.toFixed(2)}</p>
+                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">2/3 of Lydia-paid</p>
+                    </div>
                   </div>
-                  <div className={`p-4 rounded-2xl border text-center ${stats.lydiaNetBalance >= 0 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
-                    <p className="text-xs font-bold text-gray-500 mb-1">Net Balance</p>
-                    <p className={`text-2xl font-bold ${stats.lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
-                      ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {stats.lydiaNetBalance >= 0 ? `${LYDIA.name} pays couple` : `Couple pays ${LYDIA.name}`}
-                    </p>
+                  <div className={`p-3 sm:p-4 rounded-2xl border flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between ${stats.lydiaNetBalance >= 0 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
+                    <p className="text-xs font-bold text-gray-500 sm:mb-1">Net Balance</p>
+                    <div>
+                      <p className={`text-xl sm:text-2xl font-bold ${stats.lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
+                        ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">
+                        {stats.lydiaNetBalance >= 0 ? `${LYDIA.name} pays couple` : `Couple pays ${LYDIA.name}`}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </section>
             )}
 
             {/* Page 5: AI Advice */}
-            <section className="space-y-6 break-before-page min-h-[400px]">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 bg-purple-100 rounded-full text-purple-600">
-                  <Wand2 size={32} />
+            <section className="space-y-5 sm:space-y-6 break-before-page">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-8">
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-full text-purple-600">
+                  <Wand2 size={24} />
                 </div>
-                <h2 className="text-2xl font-bold text-cat-dark">Professor Paws&apos; Advice</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">Professor Paws&apos; Advice</h2>
               </div>
 
               {isGuest ? (
-                <div className="prose prose-orange max-w-none bg-yellow-50 p-8 rounded-3xl border-2 border-yellow-200 relative">
-                  <span className="absolute top-4 left-4 text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
-                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">
+                <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
+                  <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
+                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0">
                     AI-powered financial advice from Professor Paws is available for signed-in users. Sign in to get personalized tips based on your spending habits!
                   </div>
-                  <div className="mt-6 flex justify-end">
+                  <div className="mt-4 sm:mt-6 flex justify-end">
                     <a href="/auth/sign-in" className="text-sm font-bold text-cat-orange hover:underline">
                       Sign in for AI advice
                     </a>
                   </div>
                 </div>
               ) : loadingAdvice ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                  <Loader2 className="animate-spin mb-4" size={48} />
-                  <p>Consulting with the Grand Cat Council...</p>
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-gray-400">
+                  <Loader2 className="animate-spin mb-4" size={40} />
+                  <p className="text-sm sm:text-base">Consulting with the Grand Cat Council...</p>
                 </div>
               ) : (
-                <div className="prose prose-orange max-w-none bg-yellow-50 p-8 rounded-3xl border-2 border-yellow-200 relative">
-                  <span className="absolute top-4 left-4 text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
-                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">
+                <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
+                  <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
+                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0">
                     {advice}
                   </div>
-                  <div className="mt-6 flex justify-end">
-                    <div className="flex items-center gap-2 text-sm text-gray-400 font-bold uppercase tracking-wider">
+                  <div className="mt-4 sm:mt-6 flex justify-end">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">
                       Generated by Gemini <Cat size={16} />
                     </div>
                   </div>
