@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { auth } from "@/lib/auth/server";
+import { headers } from "next/headers";
 import { GoogleGenAI } from "@google/genai";
 import type { MonthlyStats, Category } from "@/lib/types";
 import type { Transaction } from "@/lib/schema";
@@ -8,9 +9,8 @@ import { CATEGORY_LIMITS } from "@/lib/constants";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("__Secure-neon-auth.session_token");
-  if (!sessionToken?.value) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) {
     return NextResponse.json({ advice: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Quicksand } from "next/font/google";
 import { Toaster } from "sonner";
-import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const quicksand = Quicksand({
@@ -28,10 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${quicksand.variable} font-sans`}>
-        <AuthProvider>
-          {children}
-          <Toaster position="top-center" richColors />
-        </AuthProvider>
+        {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

@@ -1,23 +1,23 @@
-import { createNeonAuth, type NeonAuth } from "@neondatabase/auth/next/server";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "../db";
+import * as schema from "../schema";
 
-let _auth: NeonAuth | null = null;
-
-function getAuth(): NeonAuth {
-  if (!_auth) {
-    _auth = createNeonAuth({
-      baseUrl: process.env.NEON_AUTH_BASE_URL!,
-      cookies: {
-        secret: process.env.NEON_AUTH_COOKIE_SECRET!,
-      },
-    });
-  }
-  return _auth;
-}
-
-export const auth = new Proxy({} as NeonAuth, {
-  get(_, prop) {
-    const instance = getAuth();
-    const value = (instance as Record<string | symbol, unknown>)[prop];
-    return typeof value === "function" ? value.bind(instance) : value;
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema,
+  }),
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+  },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 minutes
+    },
   },
 });
