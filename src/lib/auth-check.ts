@@ -133,7 +133,13 @@ export async function isApprovedUser(): Promise<boolean> {
     return false;
   }
 
-  // Fast path: read from local session_data JWT cookie
+  // Fast path: long-lived approval cookie (set by middleware)
+  const approvedCookie = cookieStore.get("meuwoo_approved");
+  if (approvedCookie?.value && allowed.includes(approvedCookie.value)) {
+    return true;
+  }
+
+  // Fallback: read from local session_data JWT cookie
   let email = await getEmailFromCookie(cookieStore);
 
   // Fallback: ask upstream Neon Auth server directly

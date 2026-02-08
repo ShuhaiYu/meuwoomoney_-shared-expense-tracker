@@ -1,4 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify, errors } from "jose";
+
+/**
+ * Decode the user's email from a session_data JWT.
+ * Tolerates expired JWTs (signature still valid, only `exp` failed).
+ */
+function decodeEmailFromSessionData(jwt: string, secret: string): Promise<string | null> {
+  return jwtVerify(jwt, new TextEncoder().encode(secret), { algorithms: ["HS256"] })
+    .then(({ payload }) => (payload as { user?: { email?: string } }).user?.email ?? null)
+    .catch((e) => {
+      if (e instanceof errors.JWTExpired) {
+        const payload = (e as any).payload as { user?: { email?: string } } | undefined;
+        return payload?.user?.email ?? null;
+      }
+      return null;
+    });
+}
 
 export default async function middleware(request: NextRequest) {
   console.log("[middleware]", request.nextUrl.pathname,
@@ -54,15 +71,52 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  // Proactive session_data refresh: the session_data JWT cookie has a short
-  // TTL (default 1 hour). When it expires, the browser deletes it. Without it,
-  // isApprovedUser() can't determine the user's email and kicks them to demo.
-  // Refresh it by calling our own get-session API (which proxies via the auth
-  // handler with the x-neon-auth-middleware header, bypassing origin checks).
+  // --- Stable approval: long-lived cookie cache ---
+  // Check if the user is approved via a cached cookie, avoiding dependence on
+  // the fragile session_data JWT that expires after ~1 hour.
+  const allowedEmails = process.env.ALLOWED_EMAILS?.split(",").map(e => e.trim()) || [];
+  const approvedCookie = request.cookies.get("meuwoo_approved");
+
+  if (approvedCookie?.value) {
+    if (allowedEmails.includes(approvedCookie.value)) {
+      // Already approved — pass through, no JWT/upstream needed
+      return NextResponse.next();
+    }
+    // Email no longer in ALLOWED_EMAILS — clear the stale cookie
+    console.log("[middleware] meuwoo_approved email no longer allowed, clearing");
+    const response = NextResponse.next();
+    response.cookies.delete("meuwoo_approved");
+    return response;
+  }
+
+  // Not yet cached — try to decode session_data JWT to get email and set approval cookie
   const sessionData =
     request.cookies.get("__Secure-neon-auth.local.session_data") ??
     request.cookies.get("neon-auth.local.session_data");
 
+  if (sessionData?.value && allowedEmails.length > 0) {
+    const secret = process.env.NEON_AUTH_COOKIE_SECRET;
+    if (secret) {
+      const email = await decodeEmailFromSessionData(sessionData.value, secret);
+      if (email && allowedEmails.includes(email)) {
+        console.log("[middleware] Setting meuwoo_approved cookie for", email);
+        const response = NextResponse.next();
+        response.cookies.set("meuwoo_approved", email, {
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          path: "/",
+          httpOnly: true,
+          sameSite: "lax",
+        });
+        return response;
+      }
+    }
+  }
+
+  // Proactive session_data refresh: the session_data JWT cookie has a short
+  // TTL (default 1 hour). When it expires, the browser deletes it. Without it,
+  // we can't set the approval cookie. Refresh it by calling our own get-session
+  // API (which proxies via the auth handler with the x-neon-auth-middleware
+  // header, bypassing origin checks).
   if (!sessionData?.value) {
     // Guard: only attempt refresh once — prevent redirect loops
     if (!request.cookies.get("_neon_refresh")) {
