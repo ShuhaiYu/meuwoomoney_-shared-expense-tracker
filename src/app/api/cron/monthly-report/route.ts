@@ -4,6 +4,7 @@ import { getAllTransactions } from "@/lib/queries";
 import { computeStats } from "@/lib/stats";
 import { generateMonthlyReportPdf } from "@/lib/generate-monthly-pdf";
 import { buildMonthlyReportEmail } from "@/lib/monthly-report-email";
+import { getMelbourneParts } from "@/lib/melbourne-time";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -15,16 +16,7 @@ export async function GET(request: Request) {
   }
 
   // Get current date in Melbourne timezone
-  const melbFormatter = new Intl.DateTimeFormat("en-AU", {
-    timeZone: "Australia/Melbourne",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = melbFormatter.formatToParts(new Date());
-  const melbYear = Number(parts.find(p => p.type === "year")!.value);
-  const melbMonth = Number(parts.find(p => p.type === "month")!.value);
-  const melbDay = Number(parts.find(p => p.type === "day")!.value);
+  const { year: melbYear, month: melbMonth, day: melbDay } = getMelbourneParts();
 
   // Only run on the 1st of the month
   if (melbDay !== 1) {

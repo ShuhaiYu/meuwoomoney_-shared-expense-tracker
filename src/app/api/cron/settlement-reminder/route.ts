@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { getAllTransactions } from "@/lib/queries";
 import { computeStats } from "@/lib/stats";
 import { buildSettlementEmail } from "@/lib/email-template";
+import { getMelbourneParts } from "@/lib/melbourne-time";
 
 export const dynamic = "force-dynamic";
 
@@ -13,16 +14,7 @@ export async function GET(request: Request) {
   }
 
   // Get current date in Melbourne timezone
-  const melbFormatter = new Intl.DateTimeFormat("en-AU", {
-    timeZone: "Australia/Melbourne",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = melbFormatter.formatToParts(new Date());
-  const year = Number(parts.find(p => p.type === "year")!.value);
-  const month = Number(parts.find(p => p.type === "month")!.value);
-  const day = Number(parts.find(p => p.type === "day")!.value);
+  const { year, month, day } = getMelbourneParts();
 
   const lastDay = new Date(year, month, 0).getDate();
   const daysUntilEnd = lastDay - day;

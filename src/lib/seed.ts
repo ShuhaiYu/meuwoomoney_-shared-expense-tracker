@@ -4,18 +4,12 @@ config({ path: ".env.local" });
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { transactions } from "./schema";
+import { melbourneYearMonth } from "./melbourne-time";
 
 const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql);
 
-const getCurrentMonthPrefix = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
-};
-
-const currentMonth = getCurrentMonthPrefix();
+const currentMonth = melbourneYearMonth();
 
 const seedData = [
   { id: "seed-1", date: `${currentMonth}-01`, amount: "100.00", category: "Food" as const, payer: "Shared" as const, description: "Dinner at Sushi Place" },

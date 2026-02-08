@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CATEGORIES, FELIX, SOPHIE, LYDIA } from "@/lib/constants";
 import type { Category, PayerType } from "@/lib/types";
 import { addTransaction } from "@/lib/actions";
+import { melbourneToday, melbourneTodayDate } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 
 interface TransactionFormProps {
@@ -20,7 +21,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     return `${year}-${month}-${day}`;
   };
 
-  const todayStr = formatDate(new Date());
+  const todayStr = melbourneToday();
 
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -33,8 +34,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
 
   const getDisplayedDays = () => {
     const days = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = melbourneTodayDate();
     const viewEndDate = new Date(today);
     viewEndDate.setDate(today.getDate() - (weekOffset * 7));
     for (let i = 6; i >= 0; i--) {

@@ -3,11 +3,11 @@
 import { ArrowRight, Bell } from "lucide-react";
 import type { MonthlyStats } from "@/lib/types";
 import { LYDIA } from "@/lib/constants";
+import { melbourneDayOfMonth, melbourneLastDayOfMonth } from "@/lib/melbourne-time";
 
 export function SettlementBanner() {
-  const now = new Date();
-  const day = now.getDate();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const day = melbourneDayOfMonth();
+  const lastDay = melbourneLastDayOfMonth();
   const isSettlementTime = (day >= 14 && day <= 15) || (day >= lastDay - 1);
 
   if (!isSettlementTime) return null;

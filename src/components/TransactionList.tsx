@@ -5,6 +5,7 @@ import { TrendingUp, Filter, Calendar, XCircle, Search, Cat, FileSearch } from "
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { CATEGORIES } from "@/lib/constants";
+import { melbourneTodayDate } from "@/lib/melbourne-time";
 import { TransactionItem } from "./TransactionItem";
 
 interface TransactionListProps {
@@ -20,8 +21,7 @@ interface TransactionListProps {
 function formatDateLabel(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number);
   const date = new Date(year, month - 1, day);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = melbourneTodayDate();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 

@@ -8,6 +8,7 @@ import type { UserInfo } from "@/lib/auth-check";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
+import { melbourneYearMonth } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 import { StatsCards } from "./StatsCards";
 import { SavingsBanner } from "./SavingsBanner";
@@ -29,12 +30,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
 
   const transactions = isGuest ? guestTransactions : initialTransactions;
 
-  const [filterDate, setFilterDate] = useState<string>(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}`;
-  });
+  const [filterDate, setFilterDate] = useState<string>(() => melbourneYearMonth());
   const [filterCategory, setFilterCategory] = useState<Category | "All">("All");
 
   const filteredTransactions = useMemo(() => {

@@ -7,6 +7,7 @@ import type { MonthlyStats } from "@/lib/types";
 import { FELIX, SOPHIE, LYDIA, ANNUAL_SAVINGS_GOAL } from "@/lib/constants";
 import { PawIcon } from "./CatIcon";
 import { ChartsSection } from "./ChartsSection";
+import { melbourneYearMonth } from "@/lib/melbourne-time";
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -87,7 +88,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
         heightLeft -= pdfHeight;
       }
 
-      pdf.save(`MeuwooMoney_Report_${new Date().toISOString().slice(0, 7)}.pdf`);
+      pdf.save(`MeuwooMoney_Report_${melbourneYearMonth()}.pdf`);
     } finally {
       setShowAllFelix(prevFelixState);
       setShowAllSophie(prevSophieState);
