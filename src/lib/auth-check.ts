@@ -49,14 +49,14 @@ async function getEmailFromCookie(cookieStore: Awaited<ReturnType<typeof cookies
 }
 
 /**
- * Fallback: forward neon-auth cookies to the upstream Neon Auth server
- * to fetch session data when local session cookies are missing.
+ * Fallback: call our own auth API handler to get session data.
+ *
+ * We call auth.handler().GET() directly rather than fetching the remote
+ * Neon Auth server, because the handler adds the `x-neon-auth-middleware`
+ * header that bypasses origin validation on custom domains. Calling the
+ * remote server directly fails with 403 on custom domains like meuwoo.com.
  */
 async function getUserInfoFromUpstream(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<JwtUser | null> {
-  const baseUrl = process.env.NEON_AUTH_BASE_URL;
-  if (!baseUrl) return null;
-
-  // Collect all neon-auth cookies to forward
   const neonCookies = cookieStore
     .getAll()
     .filter((c) => c.name.includes("neon-auth"))
@@ -66,16 +66,31 @@ async function getUserInfoFromUpstream(cookieStore: Awaited<ReturnType<typeof co
   if (!neonCookies) return null;
 
   try {
-    const res = await fetch(`${baseUrl}/api/auth/get-session`, {
-      headers: { cookie: neonCookies },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    console.log("[auth-check] Upstream session response user:", data?.user?.email ?? "none");
+    const { auth } = await import("@/lib/auth/server");
+    const { headers: nextHeaders } = await import("next/headers");
+    const headersList = await nextHeaders();
+    const host = headersList.get("host") || "localhost";
+    const proto = headersList.get("x-forwarded-proto") || "https";
+
+    // Call the auth handler directly — it proxies to the Neon Auth remote
+    // server with the x-neon-auth-middleware header that bypasses origin checks.
+    const response = await auth.handler().GET(
+      new Request(`${proto}://${host}/api/auth/get-session`, {
+        method: "GET",
+        headers: { cookie: neonCookies },
+      }),
+      { params: Promise.resolve({ path: ["get-session"] }) }
+    );
+
+    if (!response.ok) {
+      console.log("[auth-check] Handler get-session failed:", response.status);
+      return null;
+    }
+    const data = await response.json();
+    console.log("[auth-check] Handler session response user:", data?.user?.email ?? "none");
     return data?.user ?? null;
   } catch (e) {
-    console.log("[auth-check] Upstream fetch failed:", e instanceof Error ? e.message : e);
+    console.log("[auth-check] Handler fallback failed:", e instanceof Error ? e.message : e);
     return null;
   }
 }
