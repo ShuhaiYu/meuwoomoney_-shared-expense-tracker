@@ -21,44 +21,16 @@ export default async function middleware(request: NextRequest) {
   console.log("[middleware]", request.nextUrl.pathname,
     "cookies:", request.cookies.getAll().map(c => c.name));
 
-  // OAuth callback: exchange the verifier server-side in middleware and redirect
-  // to / without the verifier param. This prevents a race condition where both
-  // NeonAuthUIProvider's useSession() hook and AuthCallbackRedirect try to
-  // consume the verifier — if useSession() wins, the exchange endpoint fails
-  // because the verifier was already consumed.
+  // OAuth callback: redirect to the exchange route (Node.js runtime) which
+  // does the actual verifier exchange. We avoid doing fetch() in Edge middleware
+  // because Safari mobile's Edge runtime may drop Set-Cookie headers from
+  // getSetCookie(), causing the session cookies to be lost.
   const verifier = request.nextUrl.searchParams.get("neon_auth_session_verifier");
   if (verifier) {
-    console.log("[middleware] OAuth callback with verifier, exchanging server-side");
-    try {
-      const getSessionUrl = new URL("/api/auth/get-session", request.url);
-      getSessionUrl.searchParams.set("neon_auth_session_verifier", verifier);
-
-      // Forward all cookies — the session_challange cookie is needed for
-      // the PKCE-like verifier exchange on the Neon Auth remote server.
-      const res = await fetch(getSessionUrl.toString(), {
-        headers: { cookie: request.headers.get("cookie") || "" },
-        cache: "no-store",
-      });
-
-      if (res.ok && res.headers.getSetCookie().length > 0) {
-        // Redirect to / without the verifier — cookies are set via the
-        // redirect response, which always works (even in iOS standalone).
-        const redirectUrl = new URL("/", request.url);
-        const response = NextResponse.redirect(redirectUrl);
-        for (const cookie of res.headers.getSetCookie()) {
-          response.headers.append("Set-Cookie", cookie);
-        }
-        console.log("[middleware] Verifier exchanged, redirecting to /");
-        return response;
-      }
-
-      console.log("[middleware] Verifier exchange response not ok or no cookies, status:", res.status);
-    } catch (e) {
-      console.log("[middleware] Verifier exchange failed:", e);
-    }
-
-    // Fallback: pass through so AuthCallbackRedirect can try the exchange
-    return NextResponse.next();
+    console.log("[middleware] OAuth callback with verifier, redirecting to exchange route");
+    const exchangeUrl = new URL("/api/auth/exchange", request.url);
+    exchangeUrl.searchParams.set("neon_auth_session_verifier", verifier);
+    return NextResponse.redirect(exchangeUrl);
   }
 
   const sessionToken =

@@ -39,6 +39,12 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
     });
 
+    const setCookies = res.headers.getSetCookie();
+    if (!res.ok || setCookies.length === 0) {
+      console.error("[auth/exchange] Exchange failed, status:", res.status, "cookies:", setCookies.length);
+      return NextResponse.redirect(new URL("/auth/sign-in", request.url));
+    }
+
     // Build redirect to home page
     const redirectUrl = new URL("/", request.url);
     const response = NextResponse.redirect(redirectUrl);
@@ -46,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Forward Set-Cookie headers from the auth response — this is the key part.
     // Cookies set via a redirect response are always persisted by the browser,
     // unlike cookies from a fetch() response in iOS standalone WKWebView.
-    for (const cookie of res.headers.getSetCookie()) {
+    for (const cookie of setCookies) {
       response.headers.append("Set-Cookie", cookie);
     }
 
