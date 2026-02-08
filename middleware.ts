@@ -4,13 +4,43 @@ export default async function middleware(request: NextRequest) {
   console.log("[middleware]", request.nextUrl.pathname,
     "cookies:", request.cookies.getAll().map(c => c.name));
 
-  // OAuth callback: pass through so the page can render AuthCallbackRedirect,
-  // which navigates to /api/auth/exchange for server-side verifier exchange.
-  // Important: do NOT delete cookies here — the session_challange cookie is
-  // needed for the verifier exchange, and deleting it breaks the flow
-  // (especially in iOS standalone/Home Screen mode).
-  if (request.nextUrl.searchParams.has("neon_auth_session_verifier")) {
-    console.log("[middleware] OAuth callback with verifier, passing through");
+  // OAuth callback: exchange the verifier server-side in middleware and redirect
+  // to / without the verifier param. This prevents a race condition where both
+  // NeonAuthUIProvider's useSession() hook and AuthCallbackRedirect try to
+  // consume the verifier — if useSession() wins, the exchange endpoint fails
+  // because the verifier was already consumed.
+  const verifier = request.nextUrl.searchParams.get("neon_auth_session_verifier");
+  if (verifier) {
+    console.log("[middleware] OAuth callback with verifier, exchanging server-side");
+    try {
+      const getSessionUrl = new URL("/api/auth/get-session", request.url);
+      getSessionUrl.searchParams.set("neon_auth_session_verifier", verifier);
+
+      // Forward all cookies — the session_challange cookie is needed for
+      // the PKCE-like verifier exchange on the Neon Auth remote server.
+      const res = await fetch(getSessionUrl.toString(), {
+        headers: { cookie: request.headers.get("cookie") || "" },
+        cache: "no-store",
+      });
+
+      if (res.ok && res.headers.getSetCookie().length > 0) {
+        // Redirect to / without the verifier — cookies are set via the
+        // redirect response, which always works (even in iOS standalone).
+        const redirectUrl = new URL("/", request.url);
+        const response = NextResponse.redirect(redirectUrl);
+        for (const cookie of res.headers.getSetCookie()) {
+          response.headers.append("Set-Cookie", cookie);
+        }
+        console.log("[middleware] Verifier exchanged, redirecting to /");
+        return response;
+      }
+
+      console.log("[middleware] Verifier exchange response not ok or no cookies, status:", res.status);
+    } catch (e) {
+      console.log("[middleware] Verifier exchange failed:", e);
+    }
+
+    // Fallback: pass through so AuthCallbackRedirect can try the exchange
     return NextResponse.next();
   }
 
