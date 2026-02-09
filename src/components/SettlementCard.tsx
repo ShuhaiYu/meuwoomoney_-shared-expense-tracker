@@ -49,6 +49,24 @@ export function SettlementCard({ stats }: SettlementCardProps) {
         </div>
       </div>
 
+      {stats.lydiaTransfers > 0 && (
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+            <p className="text-xs font-bold text-gray-500 mb-1">{LYDIA.name} Has Transferred</p>
+            <p className="text-xl font-bold text-blue-600">${stats.lydiaTransfers.toFixed(2)}</p>
+          </div>
+          <div className={`p-4 rounded-xl border ${stats.lydiaRemainingBalance >= 0 ? "bg-green-50 border-green-100" : stats.lydiaRemainingBalance < 0 ? "bg-orange-50 border-orange-100" : "bg-gray-50 border-gray-100"}`}>
+            <p className="text-xs font-bold text-gray-500 mb-1">Remaining</p>
+            <p className={`text-xl font-bold ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : stats.lydiaRemainingBalance > 0 ? "text-orange-600" : "text-green-600"}`}>
+              ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
+            </p>
+            {Math.abs(stats.lydiaRemainingBalance) < 0.01 && (
+              <p className="text-[10px] text-green-500 font-bold mt-1">Fully settled!</p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className={`p-4 rounded-xl flex items-center justify-between ${lydiaNetBalance >= 0 ? "bg-green-50 border border-green-200" : "bg-orange-50 border border-orange-200"}`}>
         <div className="flex items-center gap-2">
           {lydiaNetBalance >= 0 ? (
@@ -65,9 +83,20 @@ export function SettlementCard({ stats }: SettlementCardProps) {
             </>
           )}
         </div>
-        <p className={`text-2xl font-bold ${lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
-          ${Math.abs(lydiaNetBalance).toFixed(2)}
-        </p>
+        <div className="text-right">
+          {stats.lydiaTransfers > 0 ? (
+            <>
+              <p className={`text-2xl font-bold ${stats.lydiaRemainingBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
+                ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
+              </p>
+              <p className="text-[10px] text-gray-400">after transfers</p>
+            </>
+          ) : (
+            <p className={`text-2xl font-bold ${lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
+              ${Math.abs(lydiaNetBalance).toFixed(2)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

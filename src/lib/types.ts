@@ -36,4 +36,8 @@ export interface MonthlyStats {
   lydiaOwes: number;
   coupleOwesLydia: number;
   lydiaNetBalance: number;
+  felixExtraDeposits: number;
+  sophieExtraDeposits: number;
+  lydiaTransfers: number;
+  lydiaRemainingBalance: number;
 }

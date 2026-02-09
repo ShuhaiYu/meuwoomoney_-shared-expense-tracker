@@ -1,7 +1,8 @@
-import { desc, gte } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "./db";
-import { transactions } from "./schema";
-import { getMelbourneParts } from "./melbourne-time";
+import { transactions, monthlyPayments, deposits } from "./schema";
+import type { MonthlyPayment } from "./schema";
+import { getMelbourneParts, melbourneYearMonth } from "./melbourne-time";
 
 export async function getAllTransactions() {
   // Limit to last 12 months for performance (Melbourne timezone)
@@ -14,4 +15,29 @@ export async function getAllTransactions() {
     .from(transactions)
     .where(gte(transactions.date, cutoffStr))
     .orderBy(desc(transactions.date));
+}
+
+export async function getMonthlyPaymentStatus(yearMonth?: string): Promise<{ felix: MonthlyPayment | null; sophie: MonthlyPayment | null }> {
+  const ym = yearMonth ?? melbourneYearMonth();
+  const rows = await db
+    .select()
+    .from(monthlyPayments)
+    .where(eq(monthlyPayments.yearMonth, ym));
+
+  return {
+    felix: rows.find((r) => r.payer === "Felix") ?? null,
+    sophie: rows.find((r) => r.payer === "Sophie") ?? null,
+  };
+}
+
+export async function getAllDeposits() {
+  const { year, month } = getMelbourneParts();
+  const cutoff = new Date(year, month - 1 - 12, 1);
+  const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}`;
+
+  return db
+    .select()
+    .from(deposits)
+    .where(gte(deposits.yearMonth, cutoffStr))
+    .orderBy(desc(deposits.date));
 }

@@ -26,8 +26,8 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && !advice && !isGuest) {
-      fetchAdvice();
+    if (!isOpen) {
+      setAdvice("");
     }
   }, [isOpen]);
 
@@ -228,23 +228,28 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <p className="text-xs sm:text-sm font-bold text-gray-500">Monthly Contribution</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-cat-teal">${FELIX.monthlyContribution}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-cat-teal">
+                      ${FELIX.monthlyContribution}
+                      {stats.felixExtraDeposits > 0 && (
+                        <span className="text-sm text-blue-500 ml-1">+${stats.felixExtraDeposits.toFixed(2)}</span>
+                      )}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs sm:text-sm font-bold text-gray-500">Remaining</p>
-                    <p className={`text-xl sm:text-2xl font-bold ${FELIX.monthlyContribution - stats.felixTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      ${(FELIX.monthlyContribution - stats.felixTotalResponsibility).toFixed(2)}
+                    <p className={`text-xl sm:text-2xl font-bold ${(FELIX.monthlyContribution + stats.felixExtraDeposits) - stats.felixTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      ${((FELIX.monthlyContribution + stats.felixExtraDeposits) - stats.felixTotalResponsibility).toFixed(2)}
                     </p>
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
                     className="bg-cat-teal h-full rounded-full"
-                    style={{ width: `${Math.min((stats.felixTotalResponsibility / FELIX.monthlyContribution) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((stats.felixTotalResponsibility / (FELIX.monthlyContribution + stats.felixExtraDeposits)) * 100, 100)}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Used {Math.round((stats.felixTotalResponsibility / FELIX.monthlyContribution) * 100)}% of budget
+                  Used {Math.round((stats.felixTotalResponsibility / (FELIX.monthlyContribution + stats.felixExtraDeposits)) * 100)}% of budget
                 </p>
               </div>
 
@@ -289,23 +294,28 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <p className="text-xs sm:text-sm font-bold text-gray-500">Monthly Contribution</p>
-                    <p className="text-2xl sm:text-3xl font-bold text-cat-brown">${SOPHIE.monthlyContribution}</p>
+                    <p className="text-2xl sm:text-3xl font-bold text-cat-brown">
+                      ${SOPHIE.monthlyContribution}
+                      {stats.sophieExtraDeposits > 0 && (
+                        <span className="text-sm text-blue-500 ml-1">+${stats.sophieExtraDeposits.toFixed(2)}</span>
+                      )}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs sm:text-sm font-bold text-gray-500">Remaining</p>
-                    <p className={`text-xl sm:text-2xl font-bold ${SOPHIE.monthlyContribution - stats.sophieTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      ${(SOPHIE.monthlyContribution - stats.sophieTotalResponsibility).toFixed(2)}
+                    <p className={`text-xl sm:text-2xl font-bold ${(SOPHIE.monthlyContribution + stats.sophieExtraDeposits) - stats.sophieTotalResponsibility >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      ${((SOPHIE.monthlyContribution + stats.sophieExtraDeposits) - stats.sophieTotalResponsibility).toFixed(2)}
                     </p>
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                   <div
                     className="bg-cat-brown h-full rounded-full"
-                    style={{ width: `${Math.min((stats.sophieTotalResponsibility / SOPHIE.monthlyContribution) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((stats.sophieTotalResponsibility / (SOPHIE.monthlyContribution + stats.sophieExtraDeposits)) * 100, 100)}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Used {Math.round((stats.sophieTotalResponsibility / SOPHIE.monthlyContribution) * 100)}% of budget
+                  Used {Math.round((stats.sophieTotalResponsibility / (SOPHIE.monthlyContribution + stats.sophieExtraDeposits)) * 100)}% of budget
                 </p>
               </div>
 
@@ -374,6 +384,21 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                     </div>
                   </div>
                 </div>
+
+                {stats.lydiaTransfers > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                    <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl border border-blue-200 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
+                      <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Transferred</p>
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">${stats.lydiaTransfers.toFixed(2)}</p>
+                    </div>
+                    <div className={`p-3 sm:p-4 rounded-2xl border flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
+                      <p className="text-xs font-bold text-gray-500 sm:mb-1">Remaining After Transfers</p>
+                      <p className={`text-xl sm:text-2xl font-bold ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : "text-orange-600"}`}>
+                        ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </section>
             )}
 
@@ -403,7 +428,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                   <Loader2 className="animate-spin mb-4" size={40} />
                   <p className="text-sm sm:text-base">Consulting with the Grand Cat Council...</p>
                 </div>
-              ) : (
+              ) : advice ? (
                 <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
                   <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
                   <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0">
@@ -414,6 +439,16 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                       Generated by Gemini <Cat size={16} />
                     </div>
                   </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12">
+                  <button
+                    onClick={fetchAdvice}
+                    className="bg-cat-orange hover:bg-cat-brown text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-sm sm:text-base transition"
+                  >
+                    <Wand2 size={18} /> Ask Professor Paws
+                  </button>
+                  <p className="text-xs text-gray-400 mt-3">Get AI-powered financial advice</p>
                 </div>
               )}
             </section>

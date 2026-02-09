@@ -1,4 +1,4 @@
-import { pgTable, text, numeric, timestamp, varchar, pgEnum, index, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, numeric, timestamp, varchar, pgEnum, index, boolean, unique } from "drizzle-orm/pg-core";
 import { nanoid } from "nanoid";
 
 export const payerEnum = pgEnum("payer_type", ["Shared", "Felix", "Sophie", "SharedAll", "Lydia"]);
@@ -22,6 +22,38 @@ export const transactions = pgTable("transactions", {
 
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
+
+export const payerNameEnum = pgEnum("payer_name", ["Felix", "Sophie"]);
+
+export const monthlyPayments = pgTable("monthly_payments", {
+  id: text("id").$defaultFn(() => nanoid()).primaryKey(),
+  yearMonth: varchar("year_month", { length: 7 }).notNull(),
+  payer: payerNameEnum("payer").notNull(),
+  confirmedAt: timestamp("confirmed_at").defaultNow().notNull(),
+  confirmedBy: text("confirmed_by").notNull(),
+}, (table) => [
+  unique("uq_monthly_payments").on(table.yearMonth, table.payer),
+]);
+
+export type MonthlyPayment = typeof monthlyPayments.$inferSelect;
+
+export const depositorEnum = pgEnum("depositor_type", ["Felix", "Sophie", "Lydia"]);
+
+export const deposits = pgTable("deposits", {
+  id: text("id").$defaultFn(() => nanoid()).primaryKey(),
+  yearMonth: varchar("year_month", { length: 7 }).notNull(),
+  depositor: depositorEnum("depositor").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdBy: text("created_by").notNull(),
+}, (table) => [
+  index("idx_deposits_year_month").on(table.yearMonth),
+  index("idx_deposits_depositor").on(table.depositor),
+]);
+
+export type Deposit = typeof deposits.$inferSelect;
 
 // better-auth tables
 export const user = pgTable("user", {

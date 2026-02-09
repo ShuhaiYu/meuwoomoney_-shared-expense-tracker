@@ -2,7 +2,16 @@ import type { Transaction } from "./schema";
 import type { Category, MonthlyStats } from "./types";
 import { FELIX, SOPHIE } from "./constants";
 
-export function computeStats(filteredTransactions: Transaction[]): MonthlyStats {
+interface DepositTotals {
+  felixExtra: number;
+  sophieExtra: number;
+  lydiaTransfers: number;
+}
+
+export function computeStats(
+  filteredTransactions: Transaction[],
+  depositTotals: DepositTotals = { felixExtra: 0, sophieExtra: 0, lydiaTransfers: 0 },
+): MonthlyStats {
   let totalShared = 0;
   let totalFelixPersonal = 0;
   let totalSophiePersonal = 0;
@@ -54,7 +63,8 @@ export function computeStats(filteredTransactions: Transaction[]): MonthlyStats 
   // Couple's total spending: full couple-only + their 2/3 share of 3-way expenses
   const totalSpent = totalShared + totalFelixPersonal + totalSophiePersonal
     + (totalSharedAll * 2 / 3) + (totalLydiaPaid * 2 / 3);
-  const totalIncome = FELIX.monthlyContribution + SOPHIE.monthlyContribution;
+  const totalIncome = FELIX.monthlyContribution + SOPHIE.monthlyContribution
+    + depositTotals.felixExtra + depositTotals.sophieExtra;
 
   // Settlement: Lydia owes 1/3 of SharedAll, couple owes 2/3 of Lydia-paid
   const lydiaOwes = totalSharedAll / 3;
@@ -78,5 +88,11 @@ export function computeStats(filteredTransactions: Transaction[]): MonthlyStats 
     lydiaOwes,
     coupleOwesLydia,
     lydiaNetBalance,
+    felixExtraDeposits: depositTotals.felixExtra,
+    sophieExtraDeposits: depositTotals.sophieExtra,
+    lydiaTransfers: depositTotals.lydiaTransfers,
+    lydiaRemainingBalance: lydiaNetBalance >= 0
+      ? lydiaNetBalance - depositTotals.lydiaTransfers
+      : lydiaNetBalance + depositTotals.lydiaTransfers,
   };
 }

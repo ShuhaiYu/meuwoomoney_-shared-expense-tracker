@@ -5,7 +5,7 @@ import { FileText, LogIn, LogOut } from "lucide-react";
 import { nanoid } from "nanoid";
 import { UserMenu } from "./UserMenu";
 import type { UserInfo } from "@/lib/auth-check";
-import type { Transaction } from "@/lib/schema";
+import type { Transaction, Deposit } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
 import { melbourneYearMonth } from "@/lib/melbourne-time";
@@ -16,15 +16,20 @@ import { TransactionForm } from "./TransactionForm";
 import { TransactionList } from "./TransactionList";
 import { ReportModal } from "./ReportModal";
 import { SettlementBanner, SettlementCard } from "./SettlementCard";
+import { PaymentStatusCard } from "./PaymentStatusCard";
+import { DepositsCard } from "./DepositsCard";
+import type { MonthlyPayment } from "@/lib/schema";
 
 interface DashboardProps {
   initialTransactions: Transaction[];
   isGuest?: boolean;
   isRestricted?: boolean;
   restrictedUser?: UserInfo;
+  paymentStatus?: { felix: MonthlyPayment | null; sophie: MonthlyPayment | null };
+  initialDeposits?: Deposit[];
 }
 
-export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser }: DashboardProps) {
+export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser, paymentStatus, initialDeposits }: DashboardProps) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [guestTransactions, setGuestTransactions] = useState<Transaction[]>(initialTransactions);
 
@@ -41,7 +46,25 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
     });
   }, [transactions, filterDate, filterCategory]);
 
-  const stats = useMemo(() => computeStats(filteredTransactions), [filteredTransactions]);
+  const filteredDeposits = useMemo(() => {
+    if (!initialDeposits) return [];
+    return initialDeposits.filter((d) => (filterDate ? d.yearMonth === filterDate : true));
+  }, [initialDeposits, filterDate]);
+
+  const depositTotals = useMemo(() => {
+    let felixExtra = 0;
+    let sophieExtra = 0;
+    let lydiaTransfers = 0;
+    filteredDeposits.forEach((d) => {
+      const amt = parseFloat(d.amount);
+      if (d.depositor === "Felix") felixExtra += amt;
+      else if (d.depositor === "Sophie") sophieExtra += amt;
+      else if (d.depositor === "Lydia") lydiaTransfers += amt;
+    });
+    return { felixExtra, sophieExtra, lydiaTransfers };
+  }, [filteredDeposits]);
+
+  const stats = useMemo(() => computeStats(filteredTransactions, depositTotals), [filteredTransactions, depositTotals]);
 
   const hasActiveFilters = filterDate !== "" || filterCategory !== "All";
 
@@ -134,6 +157,8 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
       <main className="max-w-3xl mx-auto px-4 pt-6 space-y-8">
         <StatsCards stats={stats} hasActiveFilters={hasActiveFilters} />
         <SavingsBanner stats={stats} hasActiveFilters={hasActiveFilters} />
+        {!isGuest && paymentStatus && <PaymentStatusCard paymentStatus={paymentStatus} />}
+        {!isGuest && <DepositsCard deposits={filteredDeposits} filterDate={filterDate} />}
         {!isGuest && <SettlementCard stats={stats} />}
         <TransactionForm onAdd={isGuest ? guestAdd : undefined} />
         <TransactionList
