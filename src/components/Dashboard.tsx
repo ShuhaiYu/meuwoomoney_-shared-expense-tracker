@@ -157,10 +157,10 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
       <main className="max-w-3xl mx-auto px-4 pt-6 space-y-8">
         <StatsCards stats={stats} hasActiveFilters={hasActiveFilters} />
         <SavingsBanner stats={stats} hasActiveFilters={hasActiveFilters} />
+        <TransactionForm onAdd={isGuest ? guestAdd : undefined} />
         {!isGuest && paymentStatus && <PaymentStatusCard paymentStatus={paymentStatus} />}
         {!isGuest && <DepositsCard deposits={filteredDeposits} filterDate={filterDate} />}
         {!isGuest && <SettlementCard stats={stats} />}
-        <TransactionForm onAdd={isGuest ? guestAdd : undefined} />
         <TransactionList
           transactions={transactions}
           filterDate={filterDate}
