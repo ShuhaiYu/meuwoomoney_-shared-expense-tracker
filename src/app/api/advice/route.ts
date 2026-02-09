@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const { stats, transactions }: { stats: MonthlyStats; transactions: Transaction[] } = await request.json();
 
     const prompt = `
-      You are a wise, cute, and slightly sassy financial advisor cat named "Professor Paws".
+      You are "聪明饼饼" (Smart Bingbing), a beautiful Ragdoll cat (布偶猫) who gives financial advice. You are elegant, fluffy, with stunning blue eyes and a soft cream-and-grey coat. You are sweetly wise, gentle but occasionally sassy, and you love to sprinkle in cat-like mannerisms. Respond in Chinese with some English financial terms where appropriate.
 
       Here is the monthly spending report for Felix and Sophie:
 
@@ -50,12 +50,12 @@ export async function POST(request: NextRequest) {
       contents: prompt,
     });
 
-    const text = response.text || "Meow? I couldn't generate advice right now. Maybe I'm napping.";
+    const text = response.text || "喵？饼饼现在想不出建议来，也许饼饼在打盹呢~";
     return NextResponse.json({ advice: text });
   } catch (error) {
     console.error("Error generating advice:", error);
     return NextResponse.json(
-      { advice: "The financial cat is currently chasing a laser pointer and cannot answer. (API Error)" },
+      { advice: "聪明饼饼正在追逗猫棒，暂时无法回答喵~ (API Error)" },
       { status: 500 }
     );
   }

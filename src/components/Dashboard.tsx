@@ -178,6 +178,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
         stats={stats}
         transactions={filteredTransactions}
         isGuest={isGuest}
+        filterDate={filterDate}
       />
     </div>
   );

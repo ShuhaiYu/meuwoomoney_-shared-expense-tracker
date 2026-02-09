@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Download, Wand2, Loader2, Cat, PiggyBank, Target, ChevronDown, ChevronUp, Calendar } from "lucide-react";
+import { X, Download, Loader2, Cat, PiggyBank, Target, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import type { Transaction } from "@/lib/schema";
 import type { MonthlyStats } from "@/lib/types";
 import { FELIX, SOPHIE, LYDIA, ANNUAL_SAVINGS_GOAL } from "@/lib/constants";
 import { PawIcon } from "./CatIcon";
 import { ChartsSection } from "./ChartsSection";
-import { melbourneYearMonth } from "@/lib/melbourne-time";
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -15,15 +14,23 @@ interface ReportModalProps {
   transactions: Transaction[];
   stats: MonthlyStats;
   isGuest?: boolean;
+  filterDate: string;
 }
 
-export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: ReportModalProps) {
+export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, filterDate }: ReportModalProps) {
   const [advice, setAdvice] = useState<string>("");
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [showAllFelix, setShowAllFelix] = useState(false);
   const [showAllSophie, setShowAllSophie] = useState(false);
 
   const reportRef = useRef<HTMLDivElement>(null);
+  const lydiaReportRef = useRef<HTMLDivElement>(null);
+
+  const displayMonth = (() => {
+    const [year, month] = filterDate.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+  })();
 
   useEffect(() => {
     if (!isOpen) {
@@ -42,7 +49,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
       const data = await res.json();
       setAdvice(data.advice);
     } catch {
-      setAdvice("The financial cat is currently chasing a laser pointer and cannot answer. (API Error)");
+      setAdvice("聪明饼饼正在追逗猫棒，暂时无法回答喵~ (API Error)");
     }
     setLoadingAdvice(false);
   };
@@ -88,10 +95,49 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
         heightLeft -= pdfHeight;
       }
 
-      pdf.save(`MeuwooMoney_Report_${melbourneYearMonth()}.pdf`);
+      pdf.save(`MeuwooMoney_Report_${filterDate}.pdf`);
     } finally {
       setShowAllFelix(prevFelixState);
       setShowAllSophie(prevSophieState);
+    }
+  };
+
+  const generateLydiaPDF = async () => {
+    if (!lydiaReportRef.current) return;
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(lydiaReportRef.current, {
+        scale: 2,
+        backgroundColor: "#FDF6E3",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfImgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      let heightLeft = pdfImgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfImgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - pdfImgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfImgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`MeuwooMoney_Lydia_Settlement_${filterDate}.pdf`);
+    } catch {
+      // PDF generation failed silently
     }
   };
 
@@ -100,6 +146,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
 
   const felixTx = transactions.filter((t) => t.payer === "Felix" || t.payer === "Shared" || t.payer === "SharedAll" || t.payer === "Lydia");
   const sophieTx = transactions.filter((t) => t.payer === "Sophie" || t.payer === "Shared" || t.payer === "SharedAll" || t.payer === "Lydia");
+  const lydiaTx = transactions.filter((t) => t.payer === "SharedAll" || t.payer === "Lydia");
 
   const visibleFelixTx = showAllFelix ? felixTx : felixTx.slice(0, 5);
   const visibleSophieTx = showAllSophie ? sophieTx : sophieTx.slice(0, 5);
@@ -173,7 +220,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
             {/* Page 1: Shared Overview */}
             <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-orange/30 pb-8 sm:pb-12">
               <div className="text-center space-y-2">
-                <h1 className="text-2xl sm:text-4xl font-bold text-cat-dark">Monthly Meow Report</h1>
+                <h1 className="text-2xl sm:text-4xl font-bold text-cat-dark">{displayMonth} Meow Report</h1>
                 <p className="text-sm sm:text-base text-gray-500">Shared Expenses & Family Budget</p>
                 <div className="flex justify-center my-3 sm:my-4">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 bg-cat-orange/20 rounded-full flex items-center justify-center">
@@ -399,23 +446,34 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                     </div>
                   </div>
                 )}
+
+                {!isGuest && (
+                  <div className="flex justify-center pt-2">
+                    <button
+                      onClick={generateLydiaPDF}
+                      className="bg-cat-purple hover:bg-cat-purple/80 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 text-sm transition"
+                    >
+                      <Download size={16} /> Save PDF for Lydia
+                    </button>
+                  </div>
+                )}
               </section>
             )}
 
             {/* Page 5: AI Advice */}
             <section className="space-y-5 sm:space-y-6 break-before-page">
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-8">
-                <div className="p-2 sm:p-3 bg-purple-100 rounded-full text-purple-600">
-                  <Wand2 size={24} />
+                <div className="p-2 sm:p-3 bg-blue-50 rounded-full text-3xl">
+                  🐱
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">Professor Paws&apos; Advice</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">聪明饼饼的建议</h2>
               </div>
 
               {isGuest ? (
                 <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
                   <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
                   <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0">
-                    AI-powered financial advice from Professor Paws is available for signed-in users. Sign in to get personalized tips based on your spending habits!
+                    聪明饼饼的AI理财建议仅对登录用户开放喵~ 登录后即可获取基于你消费习惯的个性化建议！
                   </div>
                   <div className="mt-4 sm:mt-6 flex justify-end">
                     <a href="/auth/sign-in" className="text-sm font-bold text-cat-orange hover:underline">
@@ -426,7 +484,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
               ) : loadingAdvice ? (
                 <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-gray-400">
                   <Loader2 className="animate-spin mb-4" size={40} />
-                  <p className="text-sm sm:text-base">Consulting with the Grand Cat Council...</p>
+                  <p className="text-sm sm:text-base">聪明饼饼正在思考中...</p>
                 </div>
               ) : advice ? (
                 <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
@@ -446,12 +504,117 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest }: R
                     onClick={fetchAdvice}
                     className="bg-cat-orange hover:bg-cat-brown text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-sm sm:text-base transition"
                   >
-                    <Wand2 size={18} /> Ask Professor Paws
+                    <PawIcon className="w-5 h-5" /> 问问聪明饼饼
                   </button>
                   <p className="text-xs text-gray-400 mt-3">Get AI-powered financial advice</p>
                 </div>
               )}
             </section>
+          </div>
+        </div>
+      </div>
+      {/* Hidden Lydia Report for PDF generation */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <div ref={lydiaReportRef} style={{ width: 700, padding: 40, backgroundColor: "#FDF6E3", fontFamily: "sans-serif" }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h1 style={{ fontSize: 28, fontWeight: "bold", color: "#264653", marginBottom: 8 }}>
+              {displayMonth} Settlement Statement
+            </h1>
+            <p style={{ fontSize: 14, color: "#6b7280" }}>
+              {LYDIA.name}&apos;s Shared Expense Summary
+            </p>
+          </div>
+
+          {/* Transaction Details */}
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #9B59B6", paddingBottom: 8 }}>
+              Transaction Details
+            </h2>
+            {lydiaTx.length === 0 ? (
+              <p style={{ fontSize: 14, color: "#9ca3af", fontStyle: "italic" }}>No shared expenses recorded.</p>
+            ) : (
+              <div>
+                {lydiaTx.map((t) => {
+                  const rawAmount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+                  const thirdAmount = rawAmount / 3;
+                  const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
+                  return (
+                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", marginBottom: 8, backgroundColor: "white", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                      <div>
+                        <div style={{ fontWeight: "bold", color: "#374151", fontSize: 14 }}>{t.description}</div>
+                        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+                          {t.date} &middot; <span style={{ color: "#9B59B6", fontWeight: "bold" }}>{payerLabel}</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontWeight: "bold", color: "#374151", fontSize: 14 }}>
+                          ${thirdAmount.toFixed(2)}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                          Total: ${rawAmount.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Settlement Summary */}
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #9B59B6", paddingBottom: 8 }}>
+              Settlement Summary
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ backgroundColor: "white", padding: 16, borderRadius: 12, border: "1px solid #e5e7eb", textAlign: "center" }}>
+                <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>{LYDIA.name} Owes</p>
+                <p style={{ fontSize: 24, fontWeight: "bold", color: "#9B59B6" }}>${stats.lydiaOwes.toFixed(2)}</p>
+                <p style={{ fontSize: 10, color: "#9ca3af" }}>1/3 of couple-paid</p>
+              </div>
+              <div style={{ backgroundColor: "white", padding: 16, borderRadius: 12, border: "1px solid #e5e7eb", textAlign: "center" }}>
+                <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Couple Owes {LYDIA.name}</p>
+                <p style={{ fontSize: 24, fontWeight: "bold", color: "#9B59B6" }}>${stats.coupleOwesLydia.toFixed(2)}</p>
+                <p style={{ fontSize: 10, color: "#9ca3af" }}>2/3 of Lydia-paid</p>
+              </div>
+              <div style={{ backgroundColor: stats.lydiaNetBalance >= 0 ? "#f0fdf4" : "#fff7ed", padding: 16, borderRadius: 12, border: `1px solid ${stats.lydiaNetBalance >= 0 ? "#bbf7d0" : "#fed7aa"}`, textAlign: "center" }}>
+                <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Net Balance</p>
+                <p style={{ fontSize: 24, fontWeight: "bold", color: stats.lydiaNetBalance >= 0 ? "#16a34a" : "#ea580c" }}>
+                  ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
+                </p>
+                <p style={{ fontSize: 10, color: "#9ca3af" }}>
+                  {stats.lydiaNetBalance >= 0 ? `${LYDIA.name} pays couple` : `Couple pays ${LYDIA.name}`}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Transfer Info */}
+          {stats.lydiaTransfers > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #3b82f6", paddingBottom: 8 }}>
+                Transfer Records
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ backgroundColor: "#eff6ff", padding: 16, borderRadius: 12, border: "1px solid #bfdbfe", textAlign: "center" }}>
+                  <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>{LYDIA.name} Transferred</p>
+                  <p style={{ fontSize: 24, fontWeight: "bold", color: "#2563eb" }}>${stats.lydiaTransfers.toFixed(2)}</p>
+                </div>
+                <div style={{ backgroundColor: Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "#f0fdf4" : "#fff7ed", padding: 16, borderRadius: 12, border: `1px solid ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "#bbf7d0" : "#fed7aa"}`, textAlign: "center" }}>
+                  <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Remaining Balance</p>
+                  <p style={{ fontSize: 24, fontWeight: "bold", color: Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "#16a34a" : "#ea580c" }}>
+                    ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div style={{ textAlign: "center", paddingTop: 24, borderTop: "1px solid #e5e7eb" }}>
+            <p style={{ fontSize: 12, color: "#9ca3af" }}>
+              Generated by MeuwooMoney &mdash; {displayMonth}
+            </p>
           </div>
         </div>
       </div>
