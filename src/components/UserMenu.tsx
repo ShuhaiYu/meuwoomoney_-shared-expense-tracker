@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { authClient } from "@/lib/auth/client";
 
@@ -33,7 +34,7 @@ export function UserMenu() {
         className="w-10 h-10 rounded-full bg-cat-orange text-white font-bold text-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-cat-orange/50 transition focus:outline-none focus:ring-2 focus:ring-cat-orange/50"
       >
         {image ? (
-          <img src={image} alt={name ?? "Avatar"} className="w-full h-full object-cover" />
+          <Image src={image} alt={name ?? "Avatar"} width={40} height={40} className="w-full h-full object-cover" />
         ) : (
           initial
         )}

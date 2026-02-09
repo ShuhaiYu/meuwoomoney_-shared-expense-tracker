@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { FileText, LogIn, LogOut } from "lucide-react";
 import { nanoid } from "nanoid";
 import { UserMenu } from "./UserMenu";
@@ -19,6 +20,10 @@ import { SettlementBanner, SettlementCard } from "./SettlementCard";
 import { PaymentStatusCard } from "./PaymentStatusCard";
 import { DepositsCard } from "./DepositsCard";
 import type { MonthlyPayment, LydiaSettlement } from "@/lib/schema";
+
+function getDayOfMonth(dateStr: string) {
+  return parseInt(dateStr.split("-")[2], 10);
+}
 
 interface DashboardProps {
   initialTransactions: Transaction[];
@@ -68,16 +73,15 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
   const stats = useMemo(() => computeStats(filteredTransactions, depositTotals), [filteredTransactions, depositTotals]);
 
   const { firstHalfStats, secondHalfStats } = useMemo(() => {
-    const getDay = (dateStr: string) => parseInt(dateStr.split("-")[2], 10);
-    const firstHalfTx = filteredTransactions.filter(t => getDay(t.date) <= 15);
-    const secondHalfTx = filteredTransactions.filter(t => getDay(t.date) > 15);
+    const firstHalfTx = filteredTransactions.filter(t => getDayOfMonth(t.date) <= 15);
+    const secondHalfTx = filteredTransactions.filter(t => getDayOfMonth(t.date) > 15);
 
     let firstHalfLydiaTransfers = 0;
     let secondHalfLydiaTransfers = 0;
     filteredDeposits.forEach((d) => {
       if (d.depositor !== "Lydia") return;
       const amt = parseFloat(d.amount);
-      if (getDay(d.date) <= 15) firstHalfLydiaTransfers += amt;
+      if (getDayOfMonth(d.date) <= 15) firstHalfLydiaTransfers += amt;
       else secondHalfLydiaTransfers += amt;
     });
 
@@ -231,9 +235,11 @@ function RestrictedAvatar({ user }: { user: UserInfo }) {
         className="w-10 h-10 rounded-full bg-cat-orange text-white font-bold text-lg flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-cat-orange/50 transition focus:outline-none focus:ring-2 focus:ring-cat-orange/50"
       >
         {user.image && !imgError ? (
-          <img
+          <Image
             src={user.image}
             alt={user.name ?? "Avatar"}
+            width={40}
+            height={40}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />

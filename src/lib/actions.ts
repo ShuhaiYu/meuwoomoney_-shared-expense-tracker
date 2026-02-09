@@ -64,7 +64,8 @@ export async function deleteTransaction(id: string): Promise<{ success: boolean;
     await db.delete(transactions).where(eq(transactions.id, id));
     revalidatePath("/");
     return { success: true };
-  } catch {
+  } catch (e) {
+    console.error("deleteTransaction error:", e);
     return { success: false, error: "Failed to delete transaction" };
   }
 }

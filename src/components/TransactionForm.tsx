@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { Plus, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORIES, FELIX, SOPHIE, LYDIA } from "@/lib/constants";
@@ -32,7 +32,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const getDisplayedDays = () => {
+  const displayedDays = useMemo(() => {
     const days = [];
     const today = melbourneTodayDate();
     const viewEndDate = new Date(today);
@@ -43,9 +43,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
       days.push(d);
     }
     return days;
-  };
-
-  const displayedDays = getDisplayedDays();
+  }, [weekOffset]);
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const handleSubmit = (e: React.FormEvent) => {
