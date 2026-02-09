@@ -65,7 +65,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
 
       const element = reportRef.current;
@@ -106,7 +106,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
     if (!lydiaReportRef.current) return;
 
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
 
       const canvas = await html2canvas(lydiaReportRef.current, {
