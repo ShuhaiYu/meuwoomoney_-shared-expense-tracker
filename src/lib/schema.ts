@@ -55,6 +55,20 @@ export const deposits = pgTable("deposits", {
 
 export type Deposit = typeof deposits.$inferSelect;
 
+export const settlementPeriodEnum = pgEnum("settlement_period", ["first-half", "second-half"]);
+
+export const lydiaSettlements = pgTable("lydia_settlements", {
+  id: text("id").$defaultFn(() => nanoid()).primaryKey(),
+  yearMonth: varchar("year_month", { length: 7 }).notNull(),
+  period: settlementPeriodEnum("period").notNull(),
+  confirmedAt: timestamp("confirmed_at").defaultNow().notNull(),
+  confirmedBy: text("confirmed_by").notNull(),
+}, (table) => [
+  unique("uq_lydia_settlements").on(table.yearMonth, table.period),
+]);
+
+export type LydiaSettlement = typeof lydiaSettlements.$inferSelect;
+
 // better-auth tables
 export const user = pgTable("user", {
   id: text("id").primaryKey(),

@@ -1,7 +1,7 @@
 import { and, desc, eq, gte } from "drizzle-orm";
 import { db } from "./db";
-import { transactions, monthlyPayments, deposits } from "./schema";
-import type { MonthlyPayment } from "./schema";
+import { transactions, monthlyPayments, deposits, lydiaSettlements } from "./schema";
+import type { MonthlyPayment, LydiaSettlement } from "./schema";
 import { getMelbourneParts, melbourneYearMonth } from "./melbourne-time";
 
 export async function getAllTransactions() {
@@ -27,6 +27,18 @@ export async function getMonthlyPaymentStatus(yearMonth?: string): Promise<{ fel
   return {
     felix: rows.find((r) => r.payer === "Felix") ?? null,
     sophie: rows.find((r) => r.payer === "Sophie") ?? null,
+  };
+}
+
+export async function getLydiaSettlementStatus(yearMonth?: string): Promise<{
+  firstHalf: LydiaSettlement | null;
+  secondHalf: LydiaSettlement | null;
+}> {
+  const ym = yearMonth ?? melbourneYearMonth();
+  const rows = await db.select().from(lydiaSettlements).where(eq(lydiaSettlements.yearMonth, ym));
+  return {
+    firstHalf: rows.find(r => r.period === "first-half") ?? null,
+    secondHalf: rows.find(r => r.period === "second-half") ?? null,
   };
 }
 

@@ -2,6 +2,43 @@ import type { Transaction } from "./schema";
 import type { Category, MonthlyStats } from "./types";
 import { FELIX, SOPHIE } from "./constants";
 
+export interface LydiaHalfStats {
+  totalSharedAll: number;
+  totalLydiaPaid: number;
+  lydiaOwes: number;
+  coupleOwesLydia: number;
+  lydiaNetBalance: number;
+  lydiaTransfers: number;
+  lydiaRemainingBalance: number;
+}
+
+export function computeLydiaHalfStats(transactions: Transaction[], lydiaTransfers: number): LydiaHalfStats {
+  let totalSharedAll = 0;
+  let totalLydiaPaid = 0;
+
+  transactions.forEach((t) => {
+    const amt = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+    if (t.payer === "SharedAll") totalSharedAll += amt;
+    else if (t.payer === "Lydia") totalLydiaPaid += amt;
+  });
+
+  const lydiaOwes = totalSharedAll / 3;
+  const coupleOwesLydia = (totalLydiaPaid * 2) / 3;
+  const lydiaNetBalance = lydiaOwes - coupleOwesLydia;
+
+  return {
+    totalSharedAll,
+    totalLydiaPaid,
+    lydiaOwes,
+    coupleOwesLydia,
+    lydiaNetBalance,
+    lydiaTransfers,
+    lydiaRemainingBalance: lydiaNetBalance >= 0
+      ? lydiaNetBalance - lydiaTransfers
+      : lydiaNetBalance + lydiaTransfers,
+  };
+}
+
 interface DepositTotals {
   felixExtra: number;
   sophieExtra: number;

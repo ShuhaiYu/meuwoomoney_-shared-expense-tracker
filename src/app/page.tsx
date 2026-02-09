@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAllTransactions, getMonthlyPaymentStatus, getAllDeposits } from "@/lib/queries";
+import { getAllTransactions, getMonthlyPaymentStatus, getAllDeposits, getLydiaSettlementStatus } from "@/lib/queries";
 import { isApprovedUser, isLoggedIn } from "@/lib/auth-check";
 import { Dashboard } from "@/components/Dashboard";
 
@@ -12,11 +12,12 @@ export default async function Page() {
     redirect(loggedIn ? "/demo?restricted=true" : "/demo");
   }
 
-  const [transactions, paymentStatus, deposits] = await Promise.all([
+  const [transactions, paymentStatus, deposits, lydiaSettlementStatus] = await Promise.all([
     getAllTransactions(),
     getMonthlyPaymentStatus(),
     getAllDeposits(),
+    getLydiaSettlementStatus(),
   ]);
 
-  return <Dashboard initialTransactions={transactions} paymentStatus={paymentStatus} initialDeposits={deposits} />;
+  return <Dashboard initialTransactions={transactions} paymentStatus={paymentStatus} initialDeposits={deposits} lydiaSettlementStatus={lydiaSettlementStatus} />;
 }

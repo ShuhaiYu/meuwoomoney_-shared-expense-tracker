@@ -7,7 +7,7 @@ import { UserMenu } from "./UserMenu";
 import type { UserInfo } from "@/lib/auth-check";
 import type { Transaction, Deposit } from "@/lib/schema";
 import type { Category } from "@/lib/types";
-import { computeStats } from "@/lib/stats";
+import { computeStats, computeLydiaHalfStats } from "@/lib/stats";
 import { melbourneYearMonth } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 import { StatsCards } from "./StatsCards";
@@ -18,7 +18,7 @@ import { ReportModal } from "./ReportModal";
 import { SettlementBanner, SettlementCard } from "./SettlementCard";
 import { PaymentStatusCard } from "./PaymentStatusCard";
 import { DepositsCard } from "./DepositsCard";
-import type { MonthlyPayment } from "@/lib/schema";
+import type { MonthlyPayment, LydiaSettlement } from "@/lib/schema";
 
 interface DashboardProps {
   initialTransactions: Transaction[];
@@ -27,9 +27,10 @@ interface DashboardProps {
   restrictedUser?: UserInfo;
   paymentStatus?: { felix: MonthlyPayment | null; sophie: MonthlyPayment | null };
   initialDeposits?: Deposit[];
+  lydiaSettlementStatus?: { firstHalf: LydiaSettlement | null; secondHalf: LydiaSettlement | null };
 }
 
-export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser, paymentStatus, initialDeposits }: DashboardProps) {
+export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser, paymentStatus, initialDeposits, lydiaSettlementStatus }: DashboardProps) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [guestTransactions, setGuestTransactions] = useState<Transaction[]>(initialTransactions);
 
@@ -65,6 +66,26 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
   }, [filteredDeposits]);
 
   const stats = useMemo(() => computeStats(filteredTransactions, depositTotals), [filteredTransactions, depositTotals]);
+
+  const { firstHalfStats, secondHalfStats } = useMemo(() => {
+    const getDay = (dateStr: string) => parseInt(dateStr.split("-")[2], 10);
+    const firstHalfTx = filteredTransactions.filter(t => getDay(t.date) <= 15);
+    const secondHalfTx = filteredTransactions.filter(t => getDay(t.date) > 15);
+
+    let firstHalfLydiaTransfers = 0;
+    let secondHalfLydiaTransfers = 0;
+    filteredDeposits.forEach((d) => {
+      if (d.depositor !== "Lydia") return;
+      const amt = parseFloat(d.amount);
+      if (getDay(d.date) <= 15) firstHalfLydiaTransfers += amt;
+      else secondHalfLydiaTransfers += amt;
+    });
+
+    return {
+      firstHalfStats: computeLydiaHalfStats(firstHalfTx, firstHalfLydiaTransfers),
+      secondHalfStats: computeLydiaHalfStats(secondHalfTx, secondHalfLydiaTransfers),
+    };
+  }, [filteredTransactions, filteredDeposits]);
 
   const hasActiveFilters = filterDate !== "" || filterCategory !== "All";
 
@@ -158,9 +179,11 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
         <StatsCards stats={stats} hasActiveFilters={hasActiveFilters} />
         <SavingsBanner stats={stats} hasActiveFilters={hasActiveFilters} />
         <TransactionForm onAdd={isGuest ? guestAdd : undefined} />
-        {!isGuest && paymentStatus && <PaymentStatusCard paymentStatus={paymentStatus} />}
+        {!isGuest && paymentStatus && !(paymentStatus.felix && paymentStatus.sophie) && (
+          <PaymentStatusCard paymentStatus={paymentStatus} />
+        )}
         {!isGuest && <DepositsCard deposits={filteredDeposits} filterDate={filterDate} />}
-        {!isGuest && <SettlementCard stats={stats} />}
+        {!isGuest && <SettlementCard stats={stats} firstHalfStats={firstHalfStats} secondHalfStats={secondHalfStats} settlementStatus={lydiaSettlementStatus} />}
         <TransactionList
           transactions={transactions}
           filterDate={filterDate}

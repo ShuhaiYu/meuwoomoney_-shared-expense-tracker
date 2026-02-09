@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "./db";
-import { monthlyPayments } from "./schema";
+import { monthlyPayments, lydiaSettlements } from "./schema";
 import { isApprovedUser, getUserInfo } from "./auth-check";
 import { melbourneYearMonth } from "./melbourne-time";
 
@@ -85,5 +85,77 @@ export async function unconfirmMonthlyPayment({
     return { success: true };
   } catch {
     return { success: false, error: "Failed to unconfirm payment" };
+  }
+}
+
+const PERIODS = ["first-half", "second-half"] as const;
+type SettlementPeriod = (typeof PERIODS)[number];
+
+export async function confirmLydiaSettlement({
+  period,
+  yearMonth,
+}: {
+  period: string;
+  yearMonth?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
+  if (!PERIODS.includes(period as SettlementPeriod)) {
+    return { success: false, error: "Invalid period" };
+  }
+
+  const ym = yearMonth ?? melbourneYearMonth();
+  const userInfo = await getUserInfo();
+  const confirmedBy = userInfo?.email ?? "unknown";
+
+  try {
+    const existing = await db
+      .select()
+      .from(lydiaSettlements)
+      .where(and(eq(lydiaSettlements.yearMonth, ym), eq(lydiaSettlements.period, period as SettlementPeriod)));
+
+    if (existing.length > 0) {
+      return { success: true };
+    }
+
+    await db.insert(lydiaSettlements).values({
+      yearMonth: ym,
+      period: period as SettlementPeriod,
+      confirmedBy,
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Failed to confirm Lydia settlement" };
+  }
+}
+
+export async function unconfirmLydiaSettlement({
+  period,
+  yearMonth,
+}: {
+  period: string;
+  yearMonth?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
+  if (!PERIODS.includes(period as SettlementPeriod)) {
+    return { success: false, error: "Invalid period" };
+  }
+
+  const ym = yearMonth ?? melbourneYearMonth();
+
+  try {
+    await db
+      .delete(lydiaSettlements)
+      .where(and(eq(lydiaSettlements.yearMonth, ym), eq(lydiaSettlements.period, period as SettlementPeriod)));
+
+    revalidatePath("/");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Failed to unconfirm Lydia settlement" };
   }
 }
