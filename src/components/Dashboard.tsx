@@ -9,7 +9,7 @@ import type { UserInfo } from "@/lib/auth-check";
 import type { Transaction, Deposit } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { computeStats, computeLydiaHalfStats } from "@/lib/stats";
-import { melbourneYearMonth } from "@/lib/melbourne-time";
+import { melbourneYearMonth, melbournePrevYearMonth } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 import { StatsCards } from "./StatsCards";
 import { SavingsBanner } from "./SavingsBanner";
@@ -33,9 +33,10 @@ interface DashboardProps {
   paymentStatus?: { felix: MonthlyPayment | null; sophie: MonthlyPayment | null };
   initialDeposits?: Deposit[];
   lydiaSettlementStatus?: { firstHalf: LydiaSettlement | null; secondHalf: LydiaSettlement | null };
+  prevMonthLydiaSettlement?: { firstHalf: LydiaSettlement | null; secondHalf: LydiaSettlement | null };
 }
 
-export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser, paymentStatus, initialDeposits, lydiaSettlementStatus }: DashboardProps) {
+export function Dashboard({ initialTransactions, isGuest, isRestricted, restrictedUser, paymentStatus, initialDeposits, lydiaSettlementStatus, prevMonthLydiaSettlement }: DashboardProps) {
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [guestTransactions, setGuestTransactions] = useState<Transaction[]>(initialTransactions);
 
@@ -91,9 +92,22 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
     };
   }, [filteredTransactions, filteredDeposits]);
 
+  const prevMonthSecondHalfStats = useMemo(() => {
+    const prevYM = melbournePrevYearMonth();
+    const prevMonthTx = transactions.filter(t => t.date.startsWith(prevYM) && getDayOfMonth(t.date) > 15);
+    const prevMonthDeposits = (initialDeposits ?? []).filter(d => d.yearMonth === prevYM);
+    let prevLydiaTransfers = 0;
+    prevMonthDeposits.forEach(d => {
+      if (d.depositor === "Lydia" && getDayOfMonth(d.date) > 15) {
+        prevLydiaTransfers += parseFloat(d.amount);
+      }
+    });
+    return computeLydiaHalfStats(prevMonthTx, prevLydiaTransfers);
+  }, [transactions, initialDeposits]);
+
   const hasActiveFilters = filterDate !== "" || filterCategory !== "All";
 
-  const guestAdd = useCallback((data: { date: string; amount: number; category: string; payer: string; description: string }) => {
+  const guestAdd = useCallback((data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => {
     const newTx: Transaction = {
       id: nanoid(),
       date: data.date,
@@ -101,6 +115,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
       category: data.category as Transaction["category"],
       payer: data.payer as Transaction["payer"],
       description: data.description,
+      lydiaShare: data.lydiaShare ? data.lydiaShare.toFixed(2) : null,
       createdAt: new Date(),
     };
     setGuestTransactions((prev) => [newTx, ...prev]);
@@ -112,7 +127,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
     return { success: true } as const;
   }, []);
 
-  const guestUpdate = useCallback((id: string, data: { date: string; amount: number; category: string; payer: string; description: string }) => {
+  const guestUpdate = useCallback((id: string, data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => {
     setGuestTransactions((prev) =>
       prev.map((t) =>
         t.id === id
@@ -123,6 +138,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
               category: data.category as Transaction["category"],
               payer: data.payer as Transaction["payer"],
               description: data.description,
+              lydiaShare: data.lydiaShare ? data.lydiaShare.toFixed(2) : null,
             }
           : t
       )
@@ -187,7 +203,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
           <PaymentStatusCard paymentStatus={paymentStatus} />
         )}
         {!isGuest && <DepositsCard deposits={filteredDeposits} filterDate={filterDate} />}
-        {!isGuest && <SettlementCard stats={stats} firstHalfStats={firstHalfStats} secondHalfStats={secondHalfStats} settlementStatus={lydiaSettlementStatus} />}
+        {!isGuest && <SettlementCard stats={stats} firstHalfStats={firstHalfStats} secondHalfStats={secondHalfStats} settlementStatus={lydiaSettlementStatus} filterDate={filterDate} prevMonthSettlement={prevMonthLydiaSettlement} prevMonthSecondHalfStats={prevMonthSecondHalfStats} />}
         <TransactionList
           transactions={transactions}
           filterDate={filterDate}

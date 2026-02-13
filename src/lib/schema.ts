@@ -13,6 +13,7 @@ export const transactions = pgTable("transactions", {
   category: categoryEnum("category").notNull(),
   payer: payerEnum("payer").notNull(),
   description: text("description").notNull(),
+  lydiaShare: numeric("lydia_share", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_transactions_date").on(table.date),

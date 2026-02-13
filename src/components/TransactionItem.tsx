@@ -12,7 +12,7 @@ import { CategoryIcon } from "./CatIcon";
 interface TransactionItemProps {
   transaction: Transaction;
   onDelete?: (id: string) => { success: boolean; error?: string };
-  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
+  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
 }
 
 const PAYERS: PayerType[] = ["Shared", "Felix", "Sophie", "SharedAll", "Lydia"];
@@ -36,6 +36,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
   const [editCategory, setEditCategory] = useState(t.category);
   const [editPayer, setEditPayer] = useState(t.payer);
   const [editDescription, setEditDescription] = useState(t.description);
+  const [editLydiaShare, setEditLydiaShare] = useState(t.lydiaShare ? String(t.lydiaShare) : "");
 
   const amount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
 
@@ -62,12 +63,14 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
   };
 
   const handleSaveEdit = () => {
+    const parsedLs = editLydiaShare ? parseFloat(editLydiaShare) : null;
     const data = {
       date: editDate,
       amount: parseFloat(editAmount),
       category: editCategory,
       payer: editPayer,
       description: editDescription,
+      lydiaShare: parsedLs && parsedLs > 0 ? parsedLs : null,
     };
 
     if (onUpdate) {
@@ -98,6 +101,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
     setEditCategory(t.category);
     setEditPayer(t.payer);
     setEditDescription(t.description);
+    setEditLydiaShare(t.lydiaShare ? String(t.lydiaShare) : "");
     setIsEditing(false);
   };
 
@@ -132,12 +136,30 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
           </select>
           <select
             value={editPayer}
-            onChange={(e) => setEditPayer(e.target.value as PayerType)}
+            onChange={(e) => {
+              const newPayer = e.target.value as PayerType;
+              setEditPayer(newPayer);
+              if (!["Shared", "Felix", "Sophie"].includes(newPayer)) setEditLydiaShare("");
+            }}
             className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
           >
             {PAYERS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
+        {["Shared", "Felix", "Sophie"].includes(editPayer) && (
+          <div className="relative">
+            <span className="absolute left-3 top-1.5 text-purple-400 text-[10px] font-bold">Lydia $</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={editLydiaShare}
+              onChange={(e) => setEditLydiaShare(e.target.value)}
+              placeholder="0.00"
+              className="w-full pl-16 pr-3 py-1.5 rounded-xl border-purple-200 bg-purple-50 focus:border-purple-400 focus:ring-purple-400 text-sm"
+            />
+          </div>
+        )}
         <input
           type="text"
           value={editDescription}
@@ -196,8 +218,13 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
         </div>
         <div>
           <p className="font-bold text-gray-800">{t.description}</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {getPayerBadge(t.payer as PayerType)}
+            {t.lydiaShare && parseFloat(String(t.lydiaShare)) > 0 && (
+              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-purple-200">
+                Lydia: ${parseFloat(String(t.lydiaShare)).toFixed(2)}
+              </span>
+            )}
             <span className="text-xs text-gray-400">{t.date}</span>
             <span className="text-xs bg-gray-100 text-gray-500 px-2 rounded-full">{t.category}</span>
           </div>

@@ -16,7 +16,17 @@ const transactionSchema = z.object({
   category: z.enum(CATEGORIES),
   payer: z.enum(PAYERS),
   description: z.string().min(1, "Description is required").max(200, "Description too long"),
-});
+  lydiaShare: z.number().min(0).optional().nullable(),
+}).refine(
+  (data) => {
+    if (data.lydiaShare && data.lydiaShare > 0) {
+      if (!["Shared", "Felix", "Sophie"].includes(data.payer)) return false;
+      if (data.lydiaShare >= data.amount) return false;
+    }
+    return true;
+  },
+  { message: "Lydia share must be less than amount and only for Shared/Felix/Sophie" }
+);
 
 async function requireAuth(): Promise<{ success: boolean; error?: string } | null> {
   const approved = await isApprovedUser();
@@ -32,6 +42,7 @@ export async function addTransaction(data: {
   category: string;
   payer: string;
   description: string;
+  lydiaShare?: number | null;
 }): Promise<{ success: boolean; error?: string }> {
   const authError = await requireAuth();
   if (authError) return authError;
@@ -43,6 +54,7 @@ export async function addTransaction(data: {
       category: parsed.category,
       payer: parsed.payer,
       description: parsed.description,
+      lydiaShare: parsed.lydiaShare ? parsed.lydiaShare.toFixed(2) : null,
     });
     revalidatePath("/");
     return { success: true };
@@ -78,6 +90,7 @@ export async function updateTransaction(
     category: string;
     payer: string;
     description: string;
+    lydiaShare?: number | null;
   }
 ): Promise<{ success: boolean; error?: string }> {
   const authError = await requireAuth();
@@ -93,6 +106,7 @@ export async function updateTransaction(
       category: parsed.category,
       payer: parsed.payer,
       description: parsed.description,
+      lydiaShare: parsed.lydiaShare ? parsed.lydiaShare.toFixed(2) : null,
     }).where(eq(transactions.id, id));
     revalidatePath("/");
     return { success: true };

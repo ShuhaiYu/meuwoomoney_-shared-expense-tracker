@@ -33,6 +33,7 @@ export interface MonthlyStats {
   sophieTotalResponsibility: number;
   totalSharedAll: number;
   totalLydiaPaid: number;
+  totalLydiaShare: number;
   lydiaOwes: number;
   coupleOwesLydia: number;
   lydiaNetBalance: number;

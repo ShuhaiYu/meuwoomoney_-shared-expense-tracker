@@ -5,6 +5,7 @@ import { FELIX, SOPHIE } from "./constants";
 export interface LydiaHalfStats {
   totalSharedAll: number;
   totalLydiaPaid: number;
+  totalLydiaShare: number;
   lydiaOwes: number;
   coupleOwesLydia: number;
   lydiaNetBalance: number;
@@ -15,20 +16,24 @@ export interface LydiaHalfStats {
 export function computeLydiaHalfStats(transactions: Transaction[], lydiaTransfers: number): LydiaHalfStats {
   let totalSharedAll = 0;
   let totalLydiaPaid = 0;
+  let totalLydiaShare = 0;
 
   transactions.forEach((t) => {
     const amt = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+    const ls = t.lydiaShare ? parseFloat(String(t.lydiaShare)) : 0;
     if (t.payer === "SharedAll") totalSharedAll += amt;
     else if (t.payer === "Lydia") totalLydiaPaid += amt;
+    if (["Shared", "Felix", "Sophie"].includes(t.payer) && ls > 0) totalLydiaShare += ls;
   });
 
-  const lydiaOwes = totalSharedAll / 3;
+  const lydiaOwes = totalSharedAll / 3 + totalLydiaShare;
   const coupleOwesLydia = (totalLydiaPaid * 2) / 3;
   const lydiaNetBalance = lydiaOwes - coupleOwesLydia;
 
   return {
     totalSharedAll,
     totalLydiaPaid,
+    totalLydiaShare,
     lydiaOwes,
     coupleOwesLydia,
     lydiaNetBalance,
@@ -54,6 +59,7 @@ export function computeStats(
   let totalSophiePersonal = 0;
   let totalSharedAll = 0;
   let totalLydiaPaid = 0;
+  let totalLydiaShare = 0;
 
   const categoryBreakdown: Record<Category, number> = {
     Food: 0, Rent: 0, Utilities: 0, Cats: 0, Shopping: 0, Entertainment: 0, Transport: 0, Other: 0
@@ -67,6 +73,7 @@ export function computeStats(
 
   filteredTransactions.forEach((t) => {
     const amt = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+    const ls = t.lydiaShare ? parseFloat(String(t.lydiaShare)) : 0;
 
     categoryBreakdown[t.category as Category] = (categoryBreakdown[t.category as Category] || 0) + amt;
 
@@ -75,14 +82,14 @@ export function computeStats(
 
     if (t.payer === "Shared") {
       totalShared += amt;
-      felixPortion = amt / 2;
-      sophiePortion = amt / 2;
+      felixPortion = (amt - ls) / 2;
+      sophiePortion = (amt - ls) / 2;
     } else if (t.payer === "Felix") {
       totalFelixPersonal += amt;
-      felixPortion = amt;
+      felixPortion = amt - ls;
     } else if (t.payer === "Sophie") {
       totalSophiePersonal += amt;
-      sophiePortion = amt;
+      sophiePortion = amt - ls;
     } else if (t.payer === "SharedAll") {
       totalSharedAll += amt;
       felixPortion = amt / 3;
@@ -93,20 +100,32 @@ export function computeStats(
       sophiePortion = amt / 3;
     }
 
+    if (["Shared", "Felix", "Sophie"].includes(t.payer) && ls > 0) {
+      totalLydiaShare += ls;
+    }
+
     felixCategoryBreakdown[t.category as Category] += felixPortion;
     sophieCategoryBreakdown[t.category as Category] += sophiePortion;
   });
 
-  // Couple's total spending: full couple-only + their 2/3 share of 3-way expenses
+  // Couple's total spending: full couple-only + their 2/3 share of 3-way expenses - lydiaShare (Lydia's portion)
   const totalSpent = totalShared + totalFelixPersonal + totalSophiePersonal
-    + (totalSharedAll * 2 / 3) + (totalLydiaPaid * 2 / 3);
+    + (totalSharedAll * 2 / 3) + (totalLydiaPaid * 2 / 3) - totalLydiaShare;
   const totalIncome = FELIX.monthlyContribution + SOPHIE.monthlyContribution
     + depositTotals.felixExtra + depositTotals.sophieExtra;
 
-  // Settlement: Lydia owes 1/3 of SharedAll, couple owes 2/3 of Lydia-paid
-  const lydiaOwes = totalSharedAll / 3;
+  // Settlement: Lydia owes 1/3 of SharedAll + lydiaShare from couple purchases, couple owes 2/3 of Lydia-paid
+  const lydiaOwes = totalSharedAll / 3 + totalLydiaShare;
   const coupleOwesLydia = (totalLydiaPaid * 2) / 3;
   const lydiaNetBalance = lydiaOwes - coupleOwesLydia;
+
+  // Compute felix/sophie total responsibility from category breakdowns (already accounts for lydiaShare)
+  let felixTotalResponsibility = 0;
+  let sophieTotalResponsibility = 0;
+  for (const cat of Object.keys(felixCategoryBreakdown) as Category[]) {
+    felixTotalResponsibility += felixCategoryBreakdown[cat];
+    sophieTotalResponsibility += sophieCategoryBreakdown[cat];
+  }
 
   return {
     totalShared,
@@ -118,10 +137,11 @@ export function computeStats(
     categoryBreakdown,
     felixCategoryBreakdown,
     sophieCategoryBreakdown,
-    felixTotalResponsibility: (totalShared / 2) + totalFelixPersonal + (totalSharedAll / 3) + (totalLydiaPaid / 3),
-    sophieTotalResponsibility: (totalShared / 2) + totalSophiePersonal + (totalSharedAll / 3) + (totalLydiaPaid / 3),
+    felixTotalResponsibility,
+    sophieTotalResponsibility,
     totalSharedAll,
     totalLydiaPaid,
+    totalLydiaShare,
     lydiaOwes,
     coupleOwesLydia,
     lydiaNetBalance,

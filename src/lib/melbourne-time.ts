@@ -53,3 +53,17 @@ export function melbourneDaysAgo(n: number): string {
   const { year, month, day } = getMelbourneParts(adjusted);
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
+
+/** "YYYY-MM" for the previous month in Melbourne timezone. */
+export function melbournePrevYearMonth(): string {
+  const { year, month } = getMelbourneParts();
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  return `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+}
+
+/** Last day of a given "YYYY-MM" month. */
+export function lastDayOfMonth(yearMonth: string): number {
+  const [y, m] = yearMonth.split("-").map(Number);
+  return new Date(y, m, 0).getDate();
+}

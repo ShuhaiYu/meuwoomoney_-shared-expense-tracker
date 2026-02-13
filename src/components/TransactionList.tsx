@@ -15,7 +15,7 @@ interface TransactionListProps {
   filterCategory: Category | "All";
   setFilterCategory: (cat: Category | "All") => void;
   onDelete?: (id: string) => { success: boolean; error?: string };
-  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
+  onUpdate?: (id: string, data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
 }
 
 function formatDateLabel(dateStr: string): string {

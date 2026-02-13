@@ -394,7 +394,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
             </section>
 
             {/* Page 4: Lydia Settlement */}
-            {(stats.totalSharedAll > 0 || stats.totalLydiaPaid > 0) && (
+            {(stats.totalSharedAll > 0 || stats.totalLydiaPaid > 0 || stats.totalLydiaShare > 0) && (
               <section className="space-y-5 sm:space-y-6 border-b-4 border-dashed border-cat-purple/30 pb-8 sm:pb-12 break-before-page">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <div className="text-3xl sm:text-4xl">{LYDIA.avatar}</div>

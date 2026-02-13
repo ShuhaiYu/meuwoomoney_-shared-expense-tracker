@@ -10,7 +10,7 @@ import { melbourneToday, melbourneTodayDate } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 
 interface TransactionFormProps {
-  onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string }) => { success: boolean; error?: string };
+  onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
 }
 
 export function TransactionForm({ onAdd }: TransactionFormProps) {
@@ -29,6 +29,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   const [payer, setPayer] = useState<PayerType>("Shared");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [lydiaShare, setLydiaShare] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -50,12 +51,14 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     e.preventDefault();
     if (!amount || !description) return;
 
+    const parsedLydiaShare = lydiaShare ? parseFloat(lydiaShare) : null;
     const data = {
       date: selectedDate,
       amount: parseFloat(amount),
       category,
       payer,
       description,
+      lydiaShare: parsedLydiaShare && parsedLydiaShare > 0 ? parsedLydiaShare : null,
     };
 
     if (onAdd) {
@@ -66,6 +69,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
         setDescription("");
         setCategory("Food");
         setPayer("Shared");
+        setLydiaShare("");
         setSelectedDate(todayStr);
         setWeekOffset(0);
         setIsExpanded(false);
@@ -84,6 +88,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
         setDescription("");
         setCategory("Food");
         setPayer("Shared");
+        setLydiaShare("");
         setSelectedDate(todayStr);
         setWeekOffset(0);
         setIsExpanded(false);
@@ -235,19 +240,46 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           <div className="grid grid-cols-2 gap-2 mt-2">
             <button
               type="button"
-              onClick={() => setPayer("SharedAll")}
+              onClick={() => { setPayer("SharedAll"); setLydiaShare(""); }}
               className={`py-2 rounded-xl border-2 transition-all ${payer === "SharedAll" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
             >
               All 3 (1/3 each)
             </button>
             <button
               type="button"
-              onClick={() => setPayer("Lydia")}
+              onClick={() => { setPayer("Lydia"); setLydiaShare(""); }}
               className={`py-2 rounded-xl border-2 transition-all ${payer === "Lydia" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
             >
               {LYDIA.name} Paid
             </button>
           </div>
+
+          {["Shared", "Felix", "Sophie"].includes(payer) && (
+            <div className="mt-3 p-3 rounded-xl bg-purple-50 border border-purple-200">
+              <label className="block text-xs font-bold text-purple-700 mb-1">
+                {LYDIA.name} 代购份额 (optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-purple-400 text-sm">$</span>
+                <input
+                  type="number"
+                  value={lydiaShare}
+                  onChange={(e) => setLydiaShare(e.target.value)}
+                  className="w-full pl-8 pr-4 py-1.5 rounded-lg border-purple-200 bg-white focus:border-purple-400 focus:ring-purple-400 text-sm"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+              {lydiaShare && parseFloat(lydiaShare) > 0 && amount && parseFloat(amount) > 0 && (
+                <p className="text-[11px] text-purple-600 mt-1.5 font-medium">
+                  {payer === "Shared"
+                    ? `Couple: $${(parseFloat(amount) - parseFloat(lydiaShare)).toFixed(2)} ($${((parseFloat(amount) - parseFloat(lydiaShare)) / 2).toFixed(2)} each) · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`
+                    : `${payer}: $${(parseFloat(amount) - parseFloat(lydiaShare)).toFixed(2)} · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div>
