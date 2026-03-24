@@ -5,7 +5,7 @@ import type { Category } from "@/lib/types";
 import { CATEGORY_LIMITS } from "@/lib/constants";
 import { AlertCircle } from "lucide-react";
 
-const PIE_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#264653", "#E9C46A", "#F4A261", "#E76F51", "#2A9D8F"];
+const PIE_COLORS = ["#F4A261", "#E76F51", "#2A9D8F", "#264653", "#E9C46A", "#9B59B6", "#3498DB", "#E74C3C"];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -74,7 +74,7 @@ export function ChartsSection({ breakdown, limitMultiplier = 1 }: ChartsSectionP
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-400 italic">No spending data</div>
+          <div className="h-full flex items-center justify-center text-gray-500 italic">No spending data</div>
         )}
       </div>
 

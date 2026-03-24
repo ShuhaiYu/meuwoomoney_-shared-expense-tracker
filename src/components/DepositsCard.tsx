@@ -26,6 +26,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
   const [date, setDate] = useState(() => melbourneToday());
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,6 +60,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
       await deleteDeposit(id);
     } finally {
       setDeletingId(null);
+      setConfirmingDeleteId(null);
     }
   }
 
@@ -125,7 +127,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
                 placeholder="0.00"
               />
             </div>
@@ -136,7 +138,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               />
             </div>
           </div>
@@ -149,7 +151,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
               onChange={(e) => setDescription(e.target.value)}
               required
               maxLength={200}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
+              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500"
               placeholder="e.g. Extra contribution, Lydia payment..."
             />
           </div>
@@ -161,14 +163,14 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
             disabled={loading}
             className="w-full bg-blue-500 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {loading ? <Loader2 size={16} className="animate-spin motion-reduce:animate-none" /> : <Plus size={16} />}
             {loading ? "Adding..." : "Add Deposit"}
           </button>
         </form>
       )}
 
       {groups.length === 0 ? (
-        <p className="text-sm text-gray-400 italic text-center py-4">
+        <p className="text-sm text-gray-500 italic text-center py-4">
           No extra deposits or transfers this month.
         </p>
       ) : (
@@ -178,7 +180,7 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">{group.avatar}</span>
                 <span className="text-sm font-bold text-gray-600">{group.name}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   (${group.items.reduce((sum, d) => sum + parseFloat(d.amount), 0).toFixed(2)})
                 </span>
               </div>
@@ -190,23 +192,38 @@ export function DepositsCard({ deposits, filterDate }: DepositsCardProps) {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-gray-700 truncate">{d.description}</p>
-                      <p className="text-xs text-gray-400">{d.date}</p>
+                      <p className="text-xs text-gray-500">{d.date}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       <span className="text-sm font-bold text-blue-600">
                         +${parseFloat(d.amount).toFixed(2)}
                       </span>
-                      <button
-                        onClick={() => handleDelete(d.id)}
-                        disabled={deletingId === d.id}
-                        className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-                      >
-                        {deletingId === d.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
+                      {confirmingDeleteId === d.id ? (
+                        <div className="flex items-center gap-1" role="alertdialog" aria-label="Confirm delete">
+                          <button
+                            onClick={() => handleDelete(d.id)}
+                            disabled={deletingId === d.id}
+                            className="px-2 py-1 text-xs bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition disabled:opacity-50"
+                          >
+                            {deletingId === d.id ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" /> : "Yes"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingDeleteId(null)}
+                            className="px-2 py-1 text-xs bg-white text-gray-600 rounded-lg font-bold hover:bg-gray-100 transition border border-gray-200"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingDeleteId(d.id)}
+                          disabled={deletingId === d.id}
+                          aria-label={`Delete deposit: ${d.description}`}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                        >
                           <Trash2 size={14} />
-                        )}
-                      </button>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -54,7 +54,7 @@ function PayerRow({
             ${amount.toLocaleString()}
           </span>
           {confirmed && payment.confirmedBy && (
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-[11px] text-gray-500 mt-0.5">
               Confirmed by {payment.confirmedBy}
             </p>
           )}
@@ -71,13 +71,13 @@ function PayerRow({
         }`}
       >
         {loading ? (
-          <Loader2 size={16} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin motion-reduce:animate-none" />
         ) : confirmed ? (
           <CheckCircle size={16} />
         ) : (
           <Circle size={16} />
         )}
-        {loading ? "" : confirmed ? "Confirmed" : "Confirm"}
+        {loading ? "..." : confirmed ? "Confirmed" : "Confirm"}
       </button>
     </div>
   );
@@ -95,8 +95,8 @@ export function PaymentStatusCard({ paymentStatus }: PaymentStatusCardProps) {
         </div>
         <div>
           <h3 className="font-bold text-cat-dark text-lg">Monthly Payment</h3>
-          <p className="text-xs text-gray-400">
-            {yearStr}年{parseInt(monthStr)}月 打款状态
+          <p className="text-xs text-gray-500">
+            <span lang="zh">{yearStr}年{parseInt(monthStr)}月 打款状态</span>
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TrendingUp, Filter, Calendar, XCircle, Search, Cat, FileSearch } from "lucide-react";
+import { TrendingUp, Filter, Calendar, XCircle, Search, Cat, FileSearch, ChevronDown } from "lucide-react";
 import type { Transaction } from "@/lib/schema";
 import type { Category } from "@/lib/types";
 import { CATEGORIES } from "@/lib/constants";
@@ -80,7 +80,7 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center gap-2 mb-3 text-cat-dark font-bold text-sm uppercase tracking-wide opacity-70">
           <Search size={16} />
-          <span>Check Accounts</span>
+          <span role="heading" aria-level={3}>Check Accounts</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -97,15 +97,17 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value as Category | "All")}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-gray-700 appearance-none"
+              className="w-full pl-10 pr-10 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-gray-700 appearance-none"
             >
               <option value="All">All Categories</option>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
+            <ChevronDown className="absolute right-3 top-2.5 text-gray-400 pointer-events-none" size={18} />
           </div>
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
+              aria-label="Clear all filters"
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold flex items-center justify-center gap-2 transition"
             >
               <XCircle size={18} /> <span className="hidden sm:inline">Clear</span>
@@ -126,11 +128,11 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
 
       <div className="space-y-1">
         {filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-200">
+          <div className="text-center py-12 text-gray-500 bg-white rounded-3xl border-2 border-dashed border-gray-200">
             <Cat className="mx-auto w-12 h-12 mb-2 opacity-50" />
             <p>No expenses found for this period/category.</p>
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="text-cat-orange font-bold mt-2 hover:underline">
+              <button onClick={clearFilters} className="text-cat-brown font-bold mt-2 hover:underline">
                 Clear filters
               </button>
             )}
@@ -142,7 +144,7 @@ export function TransactionList({ transactions, filterDate, setFilterDate, filte
                 <div className="w-2.5 h-2.5 rounded-full bg-cat-orange shrink-0" />
                 <span className="text-sm font-bold text-cat-dark/70 tracking-wide">{formatDateLabel(group.date)}</span>
                 <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400 font-medium">{group.transactions.length} item{group.transactions.length > 1 ? "s" : ""}</span>
+                <span className="text-xs text-gray-500 font-medium">{group.transactions.length} item{group.transactions.length > 1 ? "s" : ""}</span>
               </div>
               <div className="space-y-3 ml-1 pl-4 border-l-2 border-cat-orange/20">
                 {group.transactions.map((t) => (

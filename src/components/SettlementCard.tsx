@@ -32,7 +32,7 @@ export function SettlementBanner() {
 
   return (
     <div className="bg-gradient-to-r from-cat-purple to-purple-400 text-white px-4 py-3 text-center text-sm font-bold flex items-center justify-center gap-2">
-      <Bell size={16} className="animate-bounce" />
+      <Bell size={16} className="animate-bounce motion-reduce:animate-none" />
       Settlement reminder! Time to settle up with {LYDIA.name}.
     </div>
   );
@@ -99,18 +99,18 @@ function HalfPeriodSection({
           }`}
         >
           {loading ? (
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />
           ) : confirmed ? (
             <CheckCircle size={14} />
           ) : (
             <Circle size={14} />
           )}
-          {loading ? "" : confirmed ? "Confirmed" : "Confirm"}
+          {loading ? "..." : confirmed ? "Confirmed" : "Confirm"}
         </button>
       </div>
 
       {confirmed && settlement.confirmedBy && (
-        <p className="text-[11px] text-gray-400 mb-2">
+        <p className="text-[11px] text-gray-500 mb-2">
           Confirmed by {settlement.confirmedBy}
         </p>
       )}
@@ -141,7 +141,7 @@ function HalfPeriodSection({
           )}
         </div>
       ) : (
-        <p className="text-xs text-gray-400">No shared expenses this period</p>
+        <p className="text-xs text-gray-500">No shared expenses this period</p>
       )}
     </div>
   );
@@ -232,7 +232,7 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
               ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
             </p>
             {Math.abs(stats.lydiaRemainingBalance) < 0.01 && (
-              <p className="text-[10px] text-green-500 font-bold mt-1">Fully settled!</p>
+              <p className="text-[11px] text-green-500 font-bold mt-1">Fully settled!</p>
             )}
           </div>
         </div>
@@ -260,7 +260,7 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
               <p className={`text-2xl font-bold ${stats.lydiaRemainingBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
                 ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
               </p>
-              <p className="text-[10px] text-gray-400">after transfers</p>
+              <p className="text-[11px] text-gray-500">after transfers</p>
             </>
           ) : (
             <p className={`text-2xl font-bold ${lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>

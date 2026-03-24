@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Download, Loader2, Cat, PiggyBank, Target, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import type { Transaction } from "@/lib/schema";
 import type { MonthlyStats } from "@/lib/types";
@@ -25,6 +27,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
 
   const reportRef = useRef<HTMLDivElement>(null);
   const lydiaReportRef = useRef<HTMLDivElement>(null);
+  const trapRef = useFocusTrap(isOpen);
 
   const displayMonth = (() => {
     const [year, month] = filterDate.split("-");
@@ -37,6 +40,15 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
       setAdvice("");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const fetchAdvice = async () => {
     setLoadingAdvice(true);
@@ -137,7 +149,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
 
       pdf.save(`MeuwooMoney_Lydia_Settlement_${filterDate}.pdf`);
     } catch {
-      // PDF generation failed silently
+      toast.error("Failed to generate PDF");
     }
   };
 
@@ -170,12 +182,12 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
       <div key={t.id} className="flex justify-between items-center text-sm p-2.5 sm:p-3 bg-gray-50 rounded-xl border border-gray-100">
         <div className="flex flex-col gap-1 min-w-0 flex-1">
           <span className="font-bold text-gray-700 truncate">{t.description}</span>
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-400">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-gray-500">
             <div className="flex items-center gap-1"><Calendar size={10} /> {t.date}</div>
-            <span className={`px-1.5 py-0.5 rounded-md font-bold uppercase text-[10px] tracking-wider ${payerBadgeClass}`}>
+            <span className={`px-1.5 py-0.5 rounded-md font-bold uppercase text-[11px] tracking-wider ${payerBadgeClass}`}>
               {payerLabel}
             </span>
-            <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md text-[10px] uppercase tracking-wider">
+            <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md text-[11px] uppercase tracking-wider">
               {t.category}
             </span>
           </div>
@@ -183,7 +195,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
         <div className="text-right shrink-0 ml-2">
           <span className="font-bold text-gray-800 block">-${displayAmount.toFixed(2)}</span>
           {isSplit && (
-            <span className="text-[10px] text-gray-400 block">Total: -${rawAmount.toFixed(2)}</span>
+            <span className="text-[11px] text-gray-500 block">Total: -${rawAmount.toFixed(2)}</span>
           )}
         </div>
       </div>
@@ -193,11 +205,18 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto">
+    <div
+      ref={trapRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div className="bg-white w-full sm:max-w-4xl rounded-t-2xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         {/* Header Control */}
         <div className="p-3 sm:p-4 bg-cat-dark text-white flex justify-between items-center shrink-0">
-          <h2 className="text-base sm:text-xl font-bold flex items-center gap-2">
+          <h2 id="report-modal-title" className="text-base sm:text-xl font-bold flex items-center gap-2">
             <Cat size={20} /> <span className="hidden sm:inline">Monthly Report Preview</span><span className="sm:hidden">Report</span>
           </h2>
           <div className="flex gap-2">
@@ -308,7 +327,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
               <div className="space-y-2">
                 <h3 className="font-bold text-cat-dark text-sm sm:text-base">Personal & Shared Expenses</h3>
                 {felixTx.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">No expenses recorded.</p>
+                  <p className="text-sm text-gray-500 italic">No expenses recorded.</p>
                 ) : (
                   <>
                     <div className="space-y-2">
@@ -374,7 +393,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
               <div className="space-y-2">
                 <h3 className="font-bold text-cat-dark text-sm sm:text-base">Personal & Shared Expenses</h3>
                 {sophieTx.length === 0 ? (
-                  <p className="text-sm text-gray-400 italic">No expenses recorded.</p>
+                  <p className="text-sm text-gray-500 italic">No expenses recorded.</p>
                 ) : (
                   <>
                     <div className="space-y-2">
@@ -409,14 +428,14 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                     <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Owes</p>
                     <div>
                       <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.lydiaOwes.toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">1/3 of couple-paid</p>
+                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">1/3 of couple-paid</p>
                     </div>
                   </div>
                   <div className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
                     <p className="text-xs font-bold text-gray-500 sm:mb-1">Couple Owes</p>
                     <div>
                       <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.coupleOwesLydia.toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">2/3 of Lydia-paid</p>
+                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">2/3 of Lydia-paid</p>
                     </div>
                   </div>
                   <div className={`p-3 sm:p-4 rounded-2xl border flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between ${stats.lydiaNetBalance >= 0 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
@@ -425,7 +444,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                       <p className={`text-xl sm:text-2xl font-bold ${stats.lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
                         ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
                       </p>
-                      <p className="text-[10px] text-gray-400 sm:mt-1 hidden sm:block">
+                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">
                         {stats.lydiaNetBalance >= 0 ? `${LYDIA.name} pays couple` : `Couple pays ${LYDIA.name}`}
                       </p>
                     </div>
@@ -466,13 +485,13 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                 <div className="p-2 sm:p-3 bg-blue-50 rounded-full text-3xl">
                   🐱
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-cat-dark">聪明饼饼的建议</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-cat-dark"><span lang="zh">聪明饼饼的建议</span></h2>
               </div>
 
               {isGuest ? (
                 <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
                   <span className="absolute top-3 left-3 sm:top-4 sm:left-4 text-4xl sm:text-6xl text-yellow-200 font-serif opacity-50">&ldquo;</span>
-                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0">
+                  <div className="markdown-body whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-sm sm:text-base pl-6 sm:pl-0" lang="zh">
                     聪明饼饼的AI理财建议仅对登录用户开放喵~ 登录后即可获取基于你消费习惯的个性化建议！
                   </div>
                   <div className="mt-4 sm:mt-6 flex justify-end">
@@ -482,9 +501,9 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                   </div>
                 </div>
               ) : loadingAdvice ? (
-                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-gray-400">
-                  <Loader2 className="animate-spin mb-4" size={40} />
-                  <p className="text-sm sm:text-base">聪明饼饼正在思考中...</p>
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-gray-500">
+                  <Loader2 className="animate-spin motion-reduce:animate-none mb-4" size={40} />
+                  <p className="text-sm sm:text-base" lang="zh">聪明饼饼正在思考中...</p>
                 </div>
               ) : advice ? (
                 <div className="prose prose-orange max-w-none bg-yellow-50 p-4 sm:p-8 rounded-2xl sm:rounded-3xl border-2 border-yellow-200 relative">
@@ -493,7 +512,7 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                     {advice}
                   </div>
                   <div className="mt-4 sm:mt-6 flex justify-end">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 font-bold uppercase tracking-wider">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 font-bold uppercase tracking-wider">
                       Generated by Gemini <Cat size={16} />
                     </div>
                   </div>
@@ -504,9 +523,9 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                     onClick={fetchAdvice}
                     className="bg-cat-orange hover:bg-cat-brown text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-sm sm:text-base transition"
                   >
-                    <PawIcon className="w-5 h-5" /> 问问聪明饼饼
+                    <PawIcon className="w-5 h-5" /> <span lang="zh">问问聪明饼饼</span>
                   </button>
-                  <p className="text-xs text-gray-400 mt-3">Get AI-powered financial advice</p>
+                  <p className="text-xs text-gray-500 mt-3">Get AI-powered financial advice</p>
                 </div>
               )}
             </section>

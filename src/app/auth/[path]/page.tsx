@@ -17,7 +17,7 @@ export default async function AuthPage() {
         <div className="text-center">
           <Link
             href="/demo"
-            className="inline-block text-sm font-bold text-cat-orange hover:text-cat-brown transition"
+            className="inline-block text-sm font-bold text-cat-brown hover:text-cat-dark transition"
           >
             Or try the demo without signing in
           </Link>

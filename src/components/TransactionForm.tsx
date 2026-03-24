@@ -109,7 +109,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-full bg-cat-orange hover:bg-cat-brown text-white font-bold py-4 rounded-2xl shadow-lg transform transition hover:scale-[1.02] flex items-center justify-center gap-2"
+        className="w-full bg-cat-orange hover:bg-cat-brown text-white font-bold py-4 rounded-2xl shadow-lg transform transition hover:scale-[1.02] motion-reduce:hover:transform-none flex items-center justify-center gap-2"
       >
         <Plus size={24} />
         <span>Add New Expense</span>
@@ -124,7 +124,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
         <h3 className="font-bold text-cat-dark text-lg flex items-center gap-2">
           <PawIcon className="text-cat-orange w-5 h-5" /> New Expense
         </h3>
-        <button onClick={() => setIsExpanded(false)} className="text-gray-400 hover:text-gray-600">Cancel</button>
+        <button onClick={() => setIsExpanded(false)} className="text-gray-500 hover:text-gray-600">Cancel</button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -136,18 +136,20 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
               <button
                 type="button"
                 onClick={() => setWeekOffset((prev) => prev + 1)}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-500"
+                aria-label="Previous week"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-500 focus-visible:ring-2 focus-visible:ring-cat-orange"
               >
                 <ChevronLeft size={20} />
               </button>
-              <span className="text-xs font-bold text-gray-400 flex items-center">
+              <span className="text-xs font-bold text-gray-500 flex items-center">
                 {weekOffset === 0 ? "Current Week" : `${weekOffset} Week(s) Ago`}
               </span>
               <button
                 type="button"
                 onClick={() => setWeekOffset((prev) => Math.max(0, prev - 1))}
                 disabled={weekOffset === 0}
-                className={`p-1 rounded-full hover:bg-gray-100 ${weekOffset === 0 ? "text-gray-200" : "text-gray-500"}`}
+                aria-label="Next week"
+                className={`p-2 rounded-full hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-cat-orange ${weekOffset === 0 ? "text-gray-200" : "text-gray-500"}`}
               >
                 <ChevronRight size={20} />
               </button>
@@ -167,12 +169,13 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
                   onClick={() => setSelectedDate(dStr)}
                   className={`
                     flex flex-col items-center justify-center py-2 rounded-xl border-2 transition-all
+                    focus-visible:ring-2 focus-visible:ring-cat-orange focus-visible:ring-offset-1
                     ${isSelected
                       ? "border-cat-dark bg-cat-dark text-white shadow-md transform scale-105"
                       : "border-gray-100 bg-white text-gray-500 hover:border-cat-orange/50 hover:bg-cat-cream"}
                   `}
                 >
-                  <span className="text-[10px] uppercase font-bold tracking-wider opacity-80 mb-0.5">
+                  <span className="text-[11px] uppercase font-bold tracking-wider opacity-80 mb-0.5">
                     {isToday ? "Tdy" : dayNames[d.getDay()]}
                   </span>
                   <span className="text-sm sm:text-lg font-bold">
@@ -218,21 +221,21 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
             <button
               type="button"
               onClick={() => setPayer("Shared")}
-              className={`py-2 rounded-xl border-2 transition-all ${payer === "Shared" ? "border-cat-orange bg-cat-orange/10 text-cat-dark font-bold" : "border-gray-100 text-gray-500"}`}
+              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Shared" ? "border-cat-orange bg-cat-orange/10 text-cat-dark font-bold" : "border-gray-100 text-gray-500"}`}
             >
               Shared (50/50)
             </button>
             <button
               type="button"
               onClick={() => setPayer("Felix")}
-              className={`py-2 rounded-xl border-2 transition-all ${payer === "Felix" ? "border-cat-teal bg-cat-teal/10 text-cat-teal font-bold" : "border-gray-100 text-gray-500"}`}
+              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Felix" ? "border-cat-teal bg-cat-teal/10 text-cat-teal font-bold" : "border-gray-100 text-gray-500"}`}
             >
               {FELIX.name} Only
             </button>
             <button
               type="button"
               onClick={() => setPayer("Sophie")}
-              className={`py-2 rounded-xl border-2 transition-all ${payer === "Sophie" ? "border-cat-brown bg-cat-brown/10 text-cat-brown font-bold" : "border-gray-100 text-gray-500"}`}
+              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Sophie" ? "border-cat-brown bg-cat-brown/10 text-cat-brown font-bold" : "border-gray-100 text-gray-500"}`}
             >
               {SOPHIE.name} Only
             </button>
@@ -241,14 +244,14 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
             <button
               type="button"
               onClick={() => { setPayer("SharedAll"); setLydiaShare(""); }}
-              className={`py-2 rounded-xl border-2 transition-all ${payer === "SharedAll" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
+              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "SharedAll" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
             >
               All 3 (1/3 each)
             </button>
             <button
               type="button"
               onClick={() => { setPayer("Lydia"); setLydiaShare(""); }}
-              className={`py-2 rounded-xl border-2 transition-all ${payer === "Lydia" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
+              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Lydia" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
             >
               {LYDIA.name} Paid
             </button>
@@ -257,7 +260,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           {["Shared", "Felix", "Sophie"].includes(payer) && (
             <div className="mt-3 p-3 rounded-xl bg-purple-50 border border-purple-200">
               <label className="block text-xs font-bold text-purple-700 mb-1">
-                {LYDIA.name} 代购份额 (optional)
+                {LYDIA.name} <span lang="zh">代购份额</span> (optional)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-purple-400 text-sm">$</span>

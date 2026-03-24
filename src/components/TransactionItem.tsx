@@ -113,6 +113,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
             type="date"
             value={editDate}
             onChange={(e) => setEditDate(e.target.value)}
+            aria-label="Date"
             className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
           />
           <div className="relative">
@@ -122,6 +123,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
               step="0.01"
               value={editAmount}
               onChange={(e) => setEditAmount(e.target.value)}
+              aria-label="Amount"
               className="w-full pl-7 pr-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
             />
           </div>
@@ -130,6 +132,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
           <select
             value={editCategory}
             onChange={(e) => setEditCategory(e.target.value as Category)}
+            aria-label="Category"
             className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
           >
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -141,6 +144,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
               setEditPayer(newPayer);
               if (!["Shared", "Felix", "Sophie"].includes(newPayer)) setEditLydiaShare("");
             }}
+            aria-label="Payer"
             className="px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
           >
             {PAYERS.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -148,7 +152,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
         </div>
         {["Shared", "Felix", "Sophie"].includes(editPayer) && (
           <div className="relative">
-            <span className="absolute left-3 top-1.5 text-purple-400 text-[10px] font-bold">Lydia $</span>
+            <span className="absolute left-3 top-1.5 text-purple-400 text-[11px] font-bold">Lydia $</span>
             <input
               type="number"
               step="0.01"
@@ -156,6 +160,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
               value={editLydiaShare}
               onChange={(e) => setEditLydiaShare(e.target.value)}
               placeholder="0.00"
+              aria-label="Lydia share amount"
               className="w-full pl-16 pr-3 py-1.5 rounded-xl border-purple-200 bg-purple-50 focus:border-purple-400 focus:ring-purple-400 text-sm"
             />
           </div>
@@ -164,6 +169,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
           type="text"
           value={editDescription}
           onChange={(e) => setEditDescription(e.target.value)}
+          aria-label="Description"
           className="w-full px-3 py-1.5 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
         />
         <div className="flex justify-end gap-2">
@@ -188,7 +194,7 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
 
   if (confirmingDelete) {
     return (
-      <div className={`bg-red-50 p-4 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between ${isPending ? "opacity-50" : ""}`}>
+      <div role="alertdialog" aria-live="assertive" aria-label={`Confirm delete ${t.description}`} className={`bg-red-50 p-4 rounded-2xl shadow-sm border border-red-200 flex items-center justify-between ${isPending ? "opacity-50" : ""}`}>
         <span className="text-sm font-bold text-red-700">Delete &quot;{t.description}&quot;?</span>
         <div className="flex items-center gap-2">
           <button
@@ -221,11 +227,11 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {getPayerBadge(t.payer as PayerType)}
             {t.lydiaShare && parseFloat(String(t.lydiaShare)) > 0 && (
-              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[10px] font-bold border border-purple-200">
+              <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[11px] font-bold border border-purple-200">
                 Lydia: ${parseFloat(String(t.lydiaShare)).toFixed(2)}
               </span>
             )}
-            <span className="text-xs text-gray-400">{t.date}</span>
+            <span className="text-xs text-gray-500">{t.date}</span>
             <span className="text-xs bg-gray-100 text-gray-500 px-2 rounded-full">{t.category}</span>
           </div>
         </div>
@@ -234,15 +240,15 @@ export function TransactionItem({ transaction: t, onDelete, onUpdate }: Transact
         <span className="font-bold text-lg text-cat-dark">-${amount.toFixed(2)}</span>
         <button
           onClick={() => setIsEditing(true)}
-          className="text-gray-300 hover:text-cat-orange transition"
-          title="Edit"
+          aria-label="Edit transaction"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-300 hover:text-cat-orange transition"
         >
           <Pencil size={16} />
         </button>
         <button
           onClick={() => setConfirmingDelete(true)}
-          className="text-gray-300 hover:text-red-400 transition"
-          title="Delete"
+          aria-label="Delete transaction"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-300 hover:text-red-400 transition"
         >
           <Trash2 size={18} />
         </button>

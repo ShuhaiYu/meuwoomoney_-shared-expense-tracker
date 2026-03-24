@@ -10,21 +10,30 @@
   --font-sans: 'Quicksand', sans-serif;
 }
 
+/* Color conventions: green=confirmed/positive, blue=deposits/info,
+   orange=warning/owes, red=error/over-budget, purple=Lydia/roommate */
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--color-cat-cream);
 }
 ::-webkit-scrollbar-thumb {
-  background: #F4A261;
+  background: var(--color-cat-orange);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #E76F51;
+  background: var(--color-cat-brown);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-cat-orange) var(--color-cat-cream);
 }
 
 body {
-  background-color: #FDF6E3;
+  background-color: var(--color-cat-cream);
 }
