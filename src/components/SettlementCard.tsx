@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Bell, CheckCircle, Circle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { MonthlyStats } from "@/lib/types";
 import type { LydiaHalfStats } from "@/lib/stats";
 import type { LydiaSettlement } from "@/lib/schema";
@@ -60,16 +62,22 @@ function HalfPeriodSection({
   yearMonth: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const confirmed = !!settlement;
 
   async function handleToggle() {
     setLoading(true);
     try {
-      if (confirmed) {
-        await unconfirmLydiaSettlement({ period, yearMonth });
+      const result = confirmed
+        ? await unconfirmLydiaSettlement({ period, yearMonth })
+        : await confirmLydiaSettlement({ period, yearMonth });
+      if (result.success) {
+        router.refresh();
       } else {
-        await confirmLydiaSettlement({ period, yearMonth });
+        toast.error(result.error || "Operation failed");
       }
+    } catch {
+      toast.error("Network error");
     } finally {
       setLoading(false);
     }
