@@ -2,6 +2,19 @@ import type { Transaction } from "./schema";
 import type { Category, MonthlyStats } from "./types";
 import { FELIX, SOPHIE } from "./constants";
 
+export function isLydiaRelevant(t: Transaction): boolean {
+  if (t.payer === "SharedAll" || t.payer === "Lydia") return true;
+  const ls = t.lydiaShare ? parseFloat(String(t.lydiaShare)) : 0;
+  return ["Shared", "Felix", "Sophie"].includes(t.payer) && ls > 0;
+}
+
+export function computeLydiaPortion(t: Transaction): { direction: "lydia-owes" | "couple-owes"; amount: number } {
+  const amt = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+  if (t.payer === "SharedAll") return { direction: "lydia-owes", amount: amt / 3 };
+  if (t.payer === "Lydia") return { direction: "couple-owes", amount: (amt * 2) / 3 };
+  return { direction: "lydia-owes", amount: parseFloat(String(t.lydiaShare)) };
+}
+
 export interface LydiaHalfStats {
   totalSharedAll: number;
   totalLydiaPaid: number;

@@ -8,7 +8,7 @@ import { UserMenu } from "./UserMenu";
 import type { UserInfo } from "@/lib/auth-check";
 import type { Transaction, Deposit } from "@/lib/schema";
 import type { Category } from "@/lib/types";
-import { computeStats, computeLydiaHalfStats } from "@/lib/stats";
+import { computeStats, computeLydiaHalfStats, isLydiaRelevant } from "@/lib/stats";
 import { melbourneYearMonth, melbournePrevYearMonth } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
 import { StatsCards } from "./StatsCards";
@@ -73,7 +73,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
 
   const stats = useMemo(() => computeStats(filteredTransactions, depositTotals), [filteredTransactions, depositTotals]);
 
-  const { firstHalfStats, secondHalfStats } = useMemo(() => {
+  const { firstHalfStats, secondHalfStats, firstHalfLydiaTx, secondHalfLydiaTx } = useMemo(() => {
     const firstHalfTx = filteredTransactions.filter(t => getDayOfMonth(t.date) <= 15);
     const secondHalfTx = filteredTransactions.filter(t => getDayOfMonth(t.date) > 15);
 
@@ -89,10 +89,12 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
     return {
       firstHalfStats: computeLydiaHalfStats(firstHalfTx, firstHalfLydiaTransfers),
       secondHalfStats: computeLydiaHalfStats(secondHalfTx, secondHalfLydiaTransfers),
+      firstHalfLydiaTx: firstHalfTx.filter(isLydiaRelevant),
+      secondHalfLydiaTx: secondHalfTx.filter(isLydiaRelevant),
     };
   }, [filteredTransactions, filteredDeposits]);
 
-  const prevMonthSecondHalfStats = useMemo(() => {
+  const { prevMonthSecondHalfStats, prevMonthSecondHalfLydiaTx } = useMemo(() => {
     const prevYM = melbournePrevYearMonth();
     const prevMonthTx = transactions.filter(t => t.date.startsWith(prevYM) && getDayOfMonth(t.date) > 15);
     const prevMonthDeposits = (initialDeposits ?? []).filter(d => d.yearMonth === prevYM);
@@ -102,7 +104,10 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
         prevLydiaTransfers += parseFloat(d.amount);
       }
     });
-    return computeLydiaHalfStats(prevMonthTx, prevLydiaTransfers);
+    return {
+      prevMonthSecondHalfStats: computeLydiaHalfStats(prevMonthTx, prevLydiaTransfers),
+      prevMonthSecondHalfLydiaTx: prevMonthTx.filter(isLydiaRelevant),
+    };
   }, [transactions, initialDeposits]);
 
   const hasActiveFilters = filterDate !== "" || filterCategory !== "All";
@@ -206,7 +211,7 @@ export function Dashboard({ initialTransactions, isGuest, isRestricted, restrict
           <PaymentStatusCard paymentStatus={paymentStatus} />
         )}
         {!isGuest && <DepositsCard deposits={filteredDeposits} filterDate={filterDate} />}
-        {!isGuest && <SettlementCard stats={stats} firstHalfStats={firstHalfStats} secondHalfStats={secondHalfStats} settlementStatus={lydiaSettlementStatus} filterDate={filterDate} prevMonthSettlement={prevMonthLydiaSettlement} prevMonthSecondHalfStats={prevMonthSecondHalfStats} />}
+        {!isGuest && <SettlementCard stats={stats} firstHalfStats={firstHalfStats} secondHalfStats={secondHalfStats} firstHalfTransactions={firstHalfLydiaTx} secondHalfTransactions={secondHalfLydiaTx} settlementStatus={lydiaSettlementStatus} filterDate={filterDate} prevMonthSettlement={prevMonthLydiaSettlement} prevMonthSecondHalfStats={prevMonthSecondHalfStats} prevMonthSecondHalfTransactions={prevMonthSecondHalfLydiaTx} />}
         <TransactionList
           transactions={transactions}
           filterDate={filterDate}

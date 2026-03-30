@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Bell, CheckCircle, Circle, Loader2 } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle, ChevronDown, ChevronUp, Circle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { MonthlyStats } from "@/lib/types";
 import type { LydiaHalfStats } from "@/lib/stats";
-import type { LydiaSettlement } from "@/lib/schema";
+import { computeLydiaPortion } from "@/lib/stats";
+import type { Transaction, LydiaSettlement } from "@/lib/schema";
 import { LYDIA } from "@/lib/constants";
 import { melbourneDayOfMonth, melbourneLastDayOfMonth, melbourneYearMonth, lastDayOfMonth } from "@/lib/melbourne-time";
 import { confirmLydiaSettlement, unconfirmLydiaSettlement } from "@/lib/payment-actions";
@@ -38,14 +39,47 @@ export function SettlementBanner() {
   );
 }
 
+function LydiaTransactionRow({ transaction: t }: { transaction: Transaction }) {
+  const { direction, amount } = computeLydiaPortion(t);
+  const isLydiaOwes = direction === "lydia-owes";
+  const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
+  const payerColor = t.payer === "SharedAll" || t.payer === "Lydia"
+    ? "bg-cat-purple/15 text-cat-purple border-cat-purple/20"
+    : t.payer === "Felix"
+      ? "bg-cat-teal/15 text-cat-teal border-cat-teal/20"
+      : t.payer === "Shared"
+        ? "bg-cat-orange/15 text-cat-brown border-cat-orange/20"
+        : "bg-cat-brown/15 text-cat-brown border-cat-brown/20";
+
+  return (
+    <div className="flex items-center justify-between py-1.5 text-xs">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span className="font-bold text-gray-700 truncate max-w-[120px]">{t.description}</span>
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 ${payerColor}`}>
+          {payerLabel}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0 ml-2">
+        <span className="text-[11px] text-gray-400">{t.date.slice(5)}</span>
+        <span className={`font-bold tabular-nums w-16 text-right ${isLydiaOwes ? "text-cat-purple" : "text-orange-600"}`}>
+          ${amount.toFixed(2)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface SettlementCardProps {
   stats: MonthlyStats;
   firstHalfStats: LydiaHalfStats;
   secondHalfStats: LydiaHalfStats;
+  firstHalfTransactions?: Transaction[];
+  secondHalfTransactions?: Transaction[];
   settlementStatus?: { firstHalf: LydiaSettlement | null; secondHalf: LydiaSettlement | null };
   filterDate: string;
   prevMonthSettlement?: { firstHalf: LydiaSettlement | null; secondHalf: LydiaSettlement | null };
   prevMonthSecondHalfStats?: LydiaHalfStats;
+  prevMonthSecondHalfTransactions?: Transaction[];
 }
 
 function HalfPeriodSection({
@@ -54,14 +88,17 @@ function HalfPeriodSection({
   settlement,
   period,
   yearMonth,
+  transactions,
 }: {
   label: string;
   halfStats: LydiaHalfStats;
   settlement: LydiaSettlement | null;
   period: "first-half" | "second-half";
   yearMonth: string;
+  transactions?: Transaction[];
 }) {
   const [loading, setLoading] = useState(false);
+  const [showTx, setShowTx] = useState(false);
   const router = useRouter();
   const confirmed = !!settlement;
 
@@ -85,61 +122,96 @@ function HalfPeriodSection({
 
   const hasActivity = halfStats.totalSharedAll > 0 || halfStats.totalLydiaPaid > 0 || halfStats.totalLydiaShare > 0;
 
+  // Confirmed: compact one-line display
+  if (confirmed) {
+    const netAmt = Math.abs(halfStats.lydiaNetBalance);
+    const direction = halfStats.lydiaNetBalance >= 0 ? `${LYDIA.name} paid` : `Couple paid`;
+    return (
+      <div className="px-4 py-3 rounded-xl border bg-green-50 border-green-200 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <CheckCircle size={14} className="text-green-600 shrink-0" />
+          <span className="font-bold text-sm text-gray-600">{label}</span>
+          {hasActivity && (
+            <span className="text-xs text-green-700">{direction} ${netAmt.toFixed(2)}</span>
+          )}
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={loading}
+          className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold text-green-600 hover:bg-green-100 transition disabled:opacity-50"
+        >
+          {loading ? <Loader2 size={12} className="animate-spin motion-reduce:animate-none" /> : "Undo"}
+        </button>
+      </div>
+    );
+  }
+
+  // Unconfirmed: full detail view
   return (
-    <div className={`p-4 rounded-xl border ${confirmed ? "bg-green-50 border-green-200" : "bg-cat-purple/5 border-cat-purple/10"}`}>
+    <div className="p-4 rounded-xl border bg-cat-purple/5 border-cat-purple/10">
       <div className="flex items-center justify-between mb-3">
         <h4 className="font-bold text-sm text-cat-dark">{label}</h4>
         <button
           onClick={handleToggle}
           disabled={loading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
-            confirmed
-              ? "bg-green-100 text-green-700 hover:bg-green-200"
-              : "bg-cat-purple text-white hover:bg-purple-600"
-          }`}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 bg-cat-purple text-white hover:bg-purple-600"
         >
           {loading ? (
             <Loader2 size={14} className="animate-spin motion-reduce:animate-none" />
-          ) : confirmed ? (
-            <CheckCircle size={14} />
           ) : (
             <Circle size={14} />
           )}
-          {loading ? "..." : confirmed ? "Confirmed" : "Confirm"}
+          {loading ? "..." : "Confirm"}
         </button>
       </div>
 
-      {confirmed && settlement.confirmedBy && (
-        <p className="text-[11px] text-gray-500 mb-2">
-          Confirmed by {settlement.confirmedBy}
-        </p>
-      )}
-
       {hasActivity ? (
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p className="text-[11px] text-gray-500">{LYDIA.name} Owes</p>
-            <p className="font-bold text-cat-purple">${halfStats.lydiaOwes.toFixed(2)}</p>
+        <>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-[11px] text-gray-500">{LYDIA.name} Owes</p>
+              <p className="font-bold text-cat-purple">${halfStats.lydiaOwes.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-[11px] text-gray-500">Couple Owes</p>
+              <p className="font-bold text-cat-purple">${halfStats.coupleOwesLydia.toFixed(2)}</p>
+            </div>
+            {halfStats.lydiaTransfers > 0 && (
+              <>
+                <div>
+                  <p className="text-[11px] text-gray-500">Transfers</p>
+                  <p className="font-bold text-blue-600">${halfStats.lydiaTransfers.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500">Remaining</p>
+                  <p className={`font-bold ${Math.abs(halfStats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : halfStats.lydiaRemainingBalance > 0 ? "text-orange-600" : "text-green-600"}`}>
+                    ${Math.abs(halfStats.lydiaRemainingBalance).toFixed(2)}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
-          <div>
-            <p className="text-[11px] text-gray-500">Couple Owes</p>
-            <p className="font-bold text-cat-purple">${halfStats.coupleOwesLydia.toFixed(2)}</p>
-          </div>
-          {halfStats.lydiaTransfers > 0 && (
+
+          {transactions && transactions.length > 0 && (
             <>
-              <div>
-                <p className="text-[11px] text-gray-500">Transfers</p>
-                <p className="font-bold text-blue-600">${halfStats.lydiaTransfers.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-gray-500">Remaining</p>
-                <p className={`font-bold ${Math.abs(halfStats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : halfStats.lydiaRemainingBalance > 0 ? "text-orange-600" : "text-green-600"}`}>
-                  ${Math.abs(halfStats.lydiaRemainingBalance).toFixed(2)}
-                </p>
-              </div>
+              <button
+                onClick={() => setShowTx(!showTx)}
+                className="w-full text-center text-[11px] font-bold text-cat-purple hover:bg-cat-purple/10 py-2 rounded-lg transition flex items-center justify-center gap-1 mt-3"
+              >
+                {showTx ? (
+                  <><ChevronUp size={12} /> Hide Transactions</>
+                ) : (
+                  <><ChevronDown size={12} /> {transactions.length} Transactions</>
+                )}
+              </button>
+              {showTx && (
+                <div className="mt-1 space-y-0 border-t border-gray-100 pt-2">
+                  {transactions.map(t => <LydiaTransactionRow key={t.id} transaction={t} />)}
+                </div>
+              )}
             </>
           )}
-        </div>
+        </>
       ) : (
         <p className="text-xs text-gray-500">No shared expenses this period</p>
       )}
@@ -147,7 +219,7 @@ function HalfPeriodSection({
   );
 }
 
-export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlementStatus, filterDate, prevMonthSettlement, prevMonthSecondHalfStats }: SettlementCardProps) {
+export function SettlementCard({ stats, firstHalfStats, secondHalfStats, firstHalfTransactions, secondHalfTransactions, settlementStatus, filterDate, prevMonthSettlement, prevMonthSecondHalfStats, prevMonthSecondHalfTransactions }: SettlementCardProps) {
   const { totalSharedAll, totalLydiaPaid, lydiaNetBalance } = stats;
 
   if (totalSharedAll === 0 && totalLydiaPaid === 0 && stats.totalLydiaShare === 0) return null;
@@ -168,7 +240,6 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
     showCurrentLowerHalf = true;
   } else if (day <= 15) {
     // Upper half period
-    // Show prev month lower half if not confirmed
     const [y, m] = currentYM.split("-").map(Number);
     const pm = m === 1 ? 12 : m - 1;
     const py = m === 1 ? y - 1 : y;
@@ -198,6 +269,7 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
             settlement={prevMonthSettlement?.secondHalf ?? null}
             period="second-half"
             yearMonth={prevYM}
+            transactions={prevMonthSecondHalfTransactions}
           />
         )}
         {showCurrentUpperHalf && (
@@ -207,6 +279,7 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
             settlement={settlementStatus?.firstHalf ?? null}
             period="first-half"
             yearMonth={filterDate}
+            transactions={firstHalfTransactions}
           />
         )}
         {showCurrentLowerHalf && (
@@ -216,17 +289,19 @@ export function SettlementCard({ stats, firstHalfStats, secondHalfStats, settlem
             settlement={settlementStatus?.secondHalf ?? null}
             period="second-half"
             yearMonth={filterDate}
+            transactions={secondHalfTransactions}
           />
         )}
       </div>
 
-      {stats.lydiaTransfers > 0 && (
+      {/* Monthly net balance summary - only for historical months or when transfers exist */}
+      {(!isCurrentMonth && stats.lydiaTransfers > 0) && (
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
             <p className="text-xs font-bold text-gray-500 mb-1">{LYDIA.name} Total Transferred</p>
             <p className="text-xl font-bold text-blue-600">${stats.lydiaTransfers.toFixed(2)}</p>
           </div>
-          <div className={`p-4 rounded-xl border ${stats.lydiaRemainingBalance >= 0 ? "bg-green-50 border-green-100" : stats.lydiaRemainingBalance < 0 ? "bg-orange-50 border-orange-100" : "bg-gray-50 border-gray-100"}`}>
+          <div className={`p-4 rounded-xl border ${stats.lydiaRemainingBalance >= 0 ? "bg-green-50 border-green-100" : "bg-orange-50 border-orange-100"}`}>
             <p className="text-xs font-bold text-gray-500 mb-1">Remaining</p>
             <p className={`text-xl font-bold ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : stats.lydiaRemainingBalance > 0 ? "text-orange-600" : "text-green-600"}`}>
               ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
