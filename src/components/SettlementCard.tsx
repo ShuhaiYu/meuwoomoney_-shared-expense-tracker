@@ -115,7 +115,7 @@ function HalfPeriodSection({
     try {
       const result = confirmed
         ? await unconfirmLydiaSettlement({ period, yearMonth })
-        : await confirmLydiaSettlement({ period, yearMonth });
+        : await confirmLydiaSettlement({ period, yearMonth, netBalance: halfStats.lydiaNetBalance });
       if (result.success) {
         router.refresh();
       } else {

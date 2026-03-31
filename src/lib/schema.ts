@@ -64,6 +64,7 @@ export const lydiaSettlements = pgTable("lydia_settlements", {
   period: settlementPeriodEnum("period").notNull(),
   confirmedAt: timestamp("confirmed_at").defaultNow().notNull(),
   confirmedBy: text("confirmed_by").notNull(),
+  depositId: text("deposit_id"),
 }, (table) => [
   unique("uq_lydia_settlements").on(table.yearMonth, table.period),
 ]);
