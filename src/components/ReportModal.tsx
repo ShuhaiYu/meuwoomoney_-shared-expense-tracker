@@ -6,7 +6,12 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Download, Loader2, Cat, PiggyBank, Target, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import type { Transaction } from "@/lib/schema";
 import type { MonthlyStats } from "@/lib/types";
+import { computeLydiaHalfStats, isLydiaRelevant, computeLydiaPortion } from "@/lib/stats";
 import { FELIX, SOPHIE, LYDIA, ANNUAL_SAVINGS_GOAL } from "@/lib/constants";
+
+function getDayOfMonth(dateStr: string) {
+  return parseInt(dateStr.split("-")[2], 10);
+}
 import { PawIcon } from "./CatIcon";
 import { ChartsSection } from "./ChartsSection";
 
@@ -158,7 +163,13 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
 
   const felixTx = transactions.filter((t) => t.payer === "Felix" || t.payer === "Shared" || t.payer === "SharedAll" || t.payer === "Lydia");
   const sophieTx = transactions.filter((t) => t.payer === "Sophie" || t.payer === "Shared" || t.payer === "SharedAll" || t.payer === "Lydia");
-  const lydiaTx = transactions.filter((t) => t.payer === "SharedAll" || t.payer === "Lydia");
+  const lydiaTx = transactions.filter(isLydiaRelevant);
+  const firstHalfLydiaTx = lydiaTx.filter(t => getDayOfMonth(t.date) <= 15);
+  const secondHalfLydiaTx = lydiaTx.filter(t => getDayOfMonth(t.date) > 15);
+  const firstHalfTx = transactions.filter(t => getDayOfMonth(t.date) <= 15);
+  const secondHalfTx = transactions.filter(t => getDayOfMonth(t.date) > 15);
+  const lydiaFirstHalfStats = computeLydiaHalfStats(firstHalfTx, 0);
+  const lydiaSecondHalfStats = computeLydiaHalfStats(secondHalfTx, 0);
 
   const visibleFelixTx = showAllFelix ? felixTx : felixTx.slice(0, 5);
   const visibleSophieTx = showAllSophie ? sophieTx : sophieTx.slice(0, 5);
@@ -423,42 +434,78 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
                   </div>
                 </div>
 
+                {/* Half-month breakdown */}
+                {[
+                  { label: "1st - 15th", halfStats: lydiaFirstHalfStats, txList: firstHalfLydiaTx },
+                  { label: "16th - End", halfStats: lydiaSecondHalfStats, txList: secondHalfLydiaTx },
+                ].map(({ label, halfStats, txList }) => {
+                  const hasHalfActivity = halfStats.totalSharedAll > 0 || halfStats.totalLydiaPaid > 0 || halfStats.totalLydiaShare > 0;
+                  if (!hasHalfActivity) return null;
+                  return (
+                    <div key={label} className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20">
+                      <h3 className="font-bold text-sm text-cat-dark mb-3">{label}</h3>
+                      <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                        <div>
+                          <p className="text-[11px] text-gray-500">{LYDIA.name} Owes</p>
+                          <p className="font-bold text-cat-purple">${halfStats.lydiaOwes.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] text-gray-500">Couple Owes</p>
+                          <p className="font-bold text-cat-purple">${halfStats.coupleOwesLydia.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      {txList.length > 0 && (
+                        <div className="space-y-1 border-t border-cat-purple/10 pt-2">
+                          {txList.map((t) => {
+                            const portion = computeLydiaPortion(t);
+                            const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
+                            return (
+                              <div key={t.id} className="flex items-center justify-between text-xs py-1">
+                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                  <span className="font-bold text-gray-700 truncate">{t.description}</span>
+                                  <span className="text-[10px] font-bold text-cat-purple shrink-0">{payerLabel}</span>
+                                </div>
+                                <span className={`font-bold tabular-nums shrink-0 ml-2 ${portion.direction === "lydia-owes" ? "text-cat-purple" : "text-orange-600"}`}>
+                                  ${portion.amount.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className={`mt-3 p-2 rounded-xl text-center text-sm font-bold ${halfStats.lydiaNetBalance >= 0 ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"}`}>
+                        Net: ${Math.abs(halfStats.lydiaNetBalance).toFixed(2)} {halfStats.lydiaNetBalance >= 0 ? `(${LYDIA.name} → Couple)` : `(Couple → ${LYDIA.name})`}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Monthly totals */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
-                    <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Owes</p>
-                    <div>
-                      <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.lydiaOwes.toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">1/3 of couple-paid</p>
-                    </div>
+                    <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Owes (Total)</p>
+                    <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.lydiaOwes.toFixed(2)}</p>
                   </div>
                   <div className="bg-cat-purple/5 p-3 sm:p-4 rounded-2xl border border-cat-purple/20 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
-                    <p className="text-xs font-bold text-gray-500 sm:mb-1">Couple Owes</p>
-                    <div>
-                      <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.coupleOwesLydia.toFixed(2)}</p>
-                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">2/3 of Lydia-paid</p>
-                    </div>
+                    <p className="text-xs font-bold text-gray-500 sm:mb-1">Couple Owes (Total)</p>
+                    <p className="text-xl sm:text-2xl font-bold text-cat-purple">${stats.coupleOwesLydia.toFixed(2)}</p>
                   </div>
                   <div className={`p-3 sm:p-4 rounded-2xl border flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between ${stats.lydiaNetBalance >= 0 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
                     <p className="text-xs font-bold text-gray-500 sm:mb-1">Net Balance</p>
-                    <div>
-                      <p className={`text-xl sm:text-2xl font-bold ${stats.lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
-                        ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
-                      </p>
-                      <p className="text-[10px] text-gray-500 sm:mt-1 hidden sm:block">
-                        {stats.lydiaNetBalance >= 0 ? `${LYDIA.name} pays couple` : `Couple pays ${LYDIA.name}`}
-                      </p>
-                    </div>
+                    <p className={`text-xl sm:text-2xl font-bold ${stats.lydiaNetBalance >= 0 ? "text-green-600" : "text-orange-600"}`}>
+                      ${Math.abs(stats.lydiaNetBalance).toFixed(2)}
+                    </p>
                   </div>
                 </div>
 
                 {stats.lydiaTransfers > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="bg-blue-50 p-3 sm:p-4 rounded-2xl border border-blue-200 flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between">
                       <p className="text-xs font-bold text-gray-500 sm:mb-1">{LYDIA.name} Transferred</p>
                       <p className="text-xl sm:text-2xl font-bold text-blue-600">${stats.lydiaTransfers.toFixed(2)}</p>
                     </div>
                     <div className={`p-3 sm:p-4 rounded-2xl border flex sm:flex-col sm:text-center items-center sm:items-stretch justify-between ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "bg-green-50 border-green-200" : "bg-orange-50 border-orange-200"}`}>
-                      <p className="text-xs font-bold text-gray-500 sm:mb-1">Remaining After Transfers</p>
+                      <p className="text-xs font-bold text-gray-500 sm:mb-1">Remaining</p>
                       <p className={`text-xl sm:text-2xl font-bold ${Math.abs(stats.lydiaRemainingBalance) < 0.01 ? "text-green-600" : "text-orange-600"}`}>
                         ${Math.abs(stats.lydiaRemainingBalance).toFixed(2)}
                       </p>
@@ -544,57 +591,83 @@ export function ReportModal({ isOpen, onClose, stats, transactions, isGuest, fil
             </p>
           </div>
 
-          {/* Transaction Details */}
-          <div style={{ marginBottom: 32 }}>
-            <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #9B59B6", paddingBottom: 8 }}>
-              Transaction Details
-            </h2>
-            {lydiaTx.length === 0 ? (
-              <p style={{ fontSize: 14, color: "#9ca3af", fontStyle: "italic" }}>No shared expenses recorded.</p>
-            ) : (
-              <div>
-                {lydiaTx.map((t) => {
-                  const rawAmount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
-                  const thirdAmount = rawAmount / 3;
-                  const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
-                  return (
-                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", marginBottom: 8, backgroundColor: "white", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-                      <div>
-                        <div style={{ fontWeight: "bold", color: "#374151", fontSize: 14 }}>{t.description}</div>
-                        <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
-                          {t.date} &middot; <span style={{ color: "#9B59B6", fontWeight: "bold" }}>{payerLabel}</span>
+          {/* Transaction Details — grouped by half-month */}
+          {[
+            { label: "1st – 15th", txList: firstHalfLydiaTx, halfStats: lydiaFirstHalfStats },
+            { label: "16th – End of Month", txList: secondHalfLydiaTx, halfStats: lydiaSecondHalfStats },
+          ].map(({ label, txList, halfStats }) => {
+            const hasActivity = halfStats.totalSharedAll > 0 || halfStats.totalLydiaPaid > 0 || halfStats.totalLydiaShare > 0;
+            if (!hasActivity) return null;
+            return (
+              <div key={label} style={{ marginBottom: 32 }}>
+                <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #9B59B6", paddingBottom: 8 }}>
+                  {label}
+                </h2>
+                {txList.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    {txList.map((t) => {
+                      const portion = computeLydiaPortion(t);
+                      const rawAmount = typeof t.amount === "string" ? parseFloat(t.amount) : t.amount;
+                      const payerLabel = t.payer === "SharedAll" ? "All 3" : t.payer;
+                      const portionLabel = portion.direction === "lydia-owes" ? `${LYDIA.name} owes` : "Couple owes";
+                      return (
+                        <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", marginBottom: 8, backgroundColor: "white", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+                          <div>
+                            <div style={{ fontWeight: "bold", color: "#374151", fontSize: 14 }}>{t.description}</div>
+                            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+                              {t.date} &middot; <span style={{ color: "#9B59B6", fontWeight: "bold" }}>{payerLabel}</span>
+                              {t.lydiaShare && parseFloat(String(t.lydiaShare)) > 0 && (
+                                <span style={{ color: "#9B59B6", marginLeft: 8 }}>Lydia share: ${parseFloat(String(t.lydiaShare)).toFixed(2)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontWeight: "bold", color: portion.direction === "lydia-owes" ? "#9B59B6" : "#ea580c", fontSize: 14 }}>
+                              ${portion.amount.toFixed(2)}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#9ca3af" }}>
+                              {portionLabel} &middot; Total: ${rawAmount.toFixed(2)}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontWeight: "bold", color: "#374151", fontSize: 14 }}>
-                          ${thirdAmount.toFixed(2)}
-                        </div>
-                        <div style={{ fontSize: 11, color: "#9ca3af" }}>
-                          Total: ${rawAmount.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
+                {/* Half-period subtotal */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  <div style={{ backgroundColor: "white", padding: 12, borderRadius: 8, border: "1px solid #e5e7eb", textAlign: "center" }}>
+                    <p style={{ fontSize: 11, fontWeight: "bold", color: "#6b7280", marginBottom: 2 }}>{LYDIA.name} Owes</p>
+                    <p style={{ fontSize: 18, fontWeight: "bold", color: "#9B59B6" }}>${halfStats.lydiaOwes.toFixed(2)}</p>
+                  </div>
+                  <div style={{ backgroundColor: "white", padding: 12, borderRadius: 8, border: "1px solid #e5e7eb", textAlign: "center" }}>
+                    <p style={{ fontSize: 11, fontWeight: "bold", color: "#6b7280", marginBottom: 2 }}>Couple Owes</p>
+                    <p style={{ fontSize: 18, fontWeight: "bold", color: "#9B59B6" }}>${halfStats.coupleOwesLydia.toFixed(2)}</p>
+                  </div>
+                  <div style={{ backgroundColor: halfStats.lydiaNetBalance >= 0 ? "#f0fdf4" : "#fff7ed", padding: 12, borderRadius: 8, border: `1px solid ${halfStats.lydiaNetBalance >= 0 ? "#bbf7d0" : "#fed7aa"}`, textAlign: "center" }}>
+                    <p style={{ fontSize: 11, fontWeight: "bold", color: "#6b7280", marginBottom: 2 }}>Net</p>
+                    <p style={{ fontSize: 18, fontWeight: "bold", color: halfStats.lydiaNetBalance >= 0 ? "#16a34a" : "#ea580c" }}>
+                      ${Math.abs(halfStats.lydiaNetBalance).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })}
 
-          {/* Settlement Summary */}
+          {/* Monthly Total Summary */}
           <div style={{ marginBottom: 32 }}>
             <h2 style={{ fontSize: 18, fontWeight: "bold", color: "#264653", marginBottom: 16, borderBottom: "2px solid #9B59B6", paddingBottom: 8 }}>
-              Settlement Summary
+              Monthly Total
             </h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <div style={{ backgroundColor: "white", padding: 16, borderRadius: 12, border: "1px solid #e5e7eb", textAlign: "center" }}>
                 <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>{LYDIA.name} Owes</p>
                 <p style={{ fontSize: 24, fontWeight: "bold", color: "#9B59B6" }}>${stats.lydiaOwes.toFixed(2)}</p>
-                <p style={{ fontSize: 10, color: "#9ca3af" }}>1/3 of couple-paid</p>
               </div>
               <div style={{ backgroundColor: "white", padding: 16, borderRadius: 12, border: "1px solid #e5e7eb", textAlign: "center" }}>
-                <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Couple Owes {LYDIA.name}</p>
+                <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Couple Owes</p>
                 <p style={{ fontSize: 24, fontWeight: "bold", color: "#9B59B6" }}>${stats.coupleOwesLydia.toFixed(2)}</p>
-                <p style={{ fontSize: 10, color: "#9ca3af" }}>2/3 of Lydia-paid</p>
               </div>
               <div style={{ backgroundColor: stats.lydiaNetBalance >= 0 ? "#f0fdf4" : "#fff7ed", padding: 16, borderRadius: 12, border: `1px solid ${stats.lydiaNetBalance >= 0 ? "#bbf7d0" : "#fed7aa"}`, textAlign: "center" }}>
                 <p style={{ fontSize: 12, fontWeight: "bold", color: "#6b7280", marginBottom: 4 }}>Net Balance</p>
