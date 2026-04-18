@@ -1,13 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, useTransition } from "react";
-import { Plus, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useMemo, useTransition, useRef } from "react";
+import { Plus, Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
+import { nanoid } from "nanoid";
 import { CATEGORIES, FELIX, SOPHIE, LYDIA } from "@/lib/constants";
 import type { Category, PayerType } from "@/lib/types";
-import { addTransaction } from "@/lib/actions";
+import { addTransaction, addMultipleTransactions } from "@/lib/actions";
 import { melbourneToday, melbourneTodayDate } from "@/lib/melbourne-time";
 import { PawIcon } from "./CatIcon";
+
+interface EntryRow {
+  id: string;
+  amount: string;
+  description: string;
+}
+
+const createRow = (): EntryRow => ({ id: nanoid(8), amount: "", description: "" });
 
 interface TransactionFormProps {
   onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
@@ -23,8 +32,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
 
   const todayStr = melbourneToday();
 
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
+  const [rows, setRows] = useState<EntryRow[]>([createRow()]);
   const [category, setCategory] = useState<Category>("Food");
   const [payer, setPayer] = useState<PayerType>("Shared");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
@@ -32,6 +40,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   const [lydiaShare, setLydiaShare] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const newRowRef = useRef<HTMLInputElement | null>(null);
 
   const displayedDays = useMemo(() => {
     const days = [];
@@ -47,53 +56,100 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   }, [weekOffset]);
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  const isMultiRow = rows.length > 1;
+
+  const updateRow = (id: string, field: "amount" | "description", value: string) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  };
+
+  const addRow = () => {
+    const newRow = createRow();
+    setRows((prev) => [...prev, newRow]);
+    // Focus the new row's amount input after render
+    setTimeout(() => newRowRef.current?.focus(), 0);
+  };
+
+  const removeRow = (id: string) => {
+    setRows((prev) => (prev.length <= 1 ? prev : prev.filter((r) => r.id !== id)));
+  };
+
+  const resetAll = () => {
+    setRows([createRow()]);
+    setCategory("Food");
+    setPayer("Shared");
+    setLydiaShare("");
+    setSelectedDate(todayStr);
+    setWeekOffset(0);
+    setIsExpanded(false);
+  };
+
+  // Collect valid rows into submission entries
+  const getValidEntries = () => {
+    const parsedLydiaShare = lydiaShare ? parseFloat(lydiaShare) : null;
+    return rows
+      .filter((r) => r.amount && r.description)
+      .map((r) => ({
+        amount: parseFloat(r.amount),
+        category,
+        payer,
+        description: r.description,
+        // Only apply lydiaShare for single-row mode
+        lydiaShare: !isMultiRow && parsedLydiaShare && parsedLydiaShare > 0 ? parsedLydiaShare : null,
+      }))
+      .filter((e) => !isNaN(e.amount) && e.amount > 0);
+  };
+
+  const filledRowCount = rows.filter((r) => r.amount && r.description).length;
+  const rowTotal = rows.reduce((sum, r) => {
+    const v = parseFloat(r.amount);
+    return sum + (isNaN(v) ? 0 : v);
+  }, 0);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description) return;
+    const entries = getValidEntries();
 
-    const parsedLydiaShare = lydiaShare ? parseFloat(lydiaShare) : null;
-    const data = {
-      date: selectedDate,
-      amount: parseFloat(amount),
-      category,
-      payer,
-      description,
-      lydiaShare: parsedLydiaShare && parsedLydiaShare > 0 ? parsedLydiaShare : null,
-    };
+    if (entries.length === 0) {
+      toast.error("请填写金额和描述");
+      return;
+    }
 
     if (onAdd) {
-      const result = onAdd(data);
-      if (result.success) {
-        toast.success("Saved!");
-        setAmount("");
-        setDescription("");
-        setCategory("Food");
-        setPayer("Shared");
-        setLydiaShare("");
-        setSelectedDate(todayStr);
-        setWeekOffset(0);
-        setIsExpanded(false);
-      } else {
-        toast.error(result.error || "Failed to save");
+      // Guest mode
+      let allSuccess = true;
+      for (const entry of entries) {
+        const result = onAdd({ date: selectedDate, ...entry });
+        if (!result.success) {
+          allSuccess = false;
+          toast.error(result.error || "Failed to save");
+          break;
+        }
+      }
+      if (allSuccess) {
+        toast.success(entries.length > 1 ? `已保存 ${entries.length} 笔记录！` : "Saved!");
+        resetAll();
       }
       return;
     }
 
     startTransition(async () => {
-      const result = await addTransaction(data);
-
-      if (result.success) {
-        toast.success("Saved!");
-        setAmount("");
-        setDescription("");
-        setCategory("Food");
-        setPayer("Shared");
-        setLydiaShare("");
-        setSelectedDate(todayStr);
-        setWeekOffset(0);
-        setIsExpanded(false);
+      if (entries.length === 1) {
+        const entry = entries[0];
+        const result = await addTransaction({ date: selectedDate, ...entry });
+        if (result.success) {
+          toast.success("已保存！");
+          resetAll();
+        } else {
+          toast.error(result.error || "保存失败");
+        }
       } else {
-        toast.error(result.error || "Failed to save");
+        const result = await addMultipleTransactions(selectedDate, entries);
+        if (result.success) {
+          toast.success(`已保存 ${result.count} 笔记录！`);
+          resetAll();
+        } else {
+          toast.error(result.error || "批量保存失败");
+        }
       }
     });
   };
@@ -124,7 +180,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
         <h3 className="font-bold text-cat-dark text-lg flex items-center gap-2">
           <PawIcon className="text-cat-orange w-5 h-5" /> New Expense
         </h3>
-        <button onClick={() => setIsExpanded(false)} className="text-gray-500 hover:text-gray-600">Cancel</button>
+        <button onClick={() => resetAll()} className="text-gray-500 hover:text-gray-600">Cancel</button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -187,34 +243,19 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-            <div className="relative">
-              <span className="absolute left-3 top-2.5 text-gray-500">$</span>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full pl-8 pr-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange"
-                placeholder="0.00"
-                required
-                step="0.01"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as Category)}
-              className="w-full px-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange"
-            >
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+        {/* Category */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as Category)}
+            className="w-full px-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange"
+          >
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
 
+        {/* Payer */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Who Paid / For Whom?</label>
           <div className="grid grid-cols-3 gap-2">
@@ -256,47 +297,90 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
               {LYDIA.name} Paid
             </button>
           </div>
-
-          {["Shared", "Felix", "Sophie"].includes(payer) && (
-            <div className="mt-3 p-3 rounded-xl bg-purple-50 border border-purple-200">
-              <label className="block text-xs font-bold text-purple-700 mb-1">
-                {LYDIA.name} <span lang="zh">代购份额</span> (optional)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-purple-400 text-sm">$</span>
-                <input
-                  type="number"
-                  value={lydiaShare}
-                  onChange={(e) => setLydiaShare(e.target.value)}
-                  className="w-full pl-8 pr-4 py-1.5 rounded-lg border-purple-200 bg-white focus:border-purple-400 focus:ring-purple-400 text-sm"
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-              {lydiaShare && parseFloat(lydiaShare) > 0 && amount && parseFloat(amount) > 0 && (
-                <p className="text-[11px] text-purple-600 mt-1.5 font-medium">
-                  {payer === "Shared"
-                    ? `Couple: $${(parseFloat(amount) - parseFloat(lydiaShare)).toFixed(2)} ($${((parseFloat(amount) - parseFloat(lydiaShare)) / 2).toFixed(2)} each) · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`
-                    : `${payer}: $${(parseFloat(amount) - parseFloat(lydiaShare)).toFixed(2)} · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`}
-                </p>
-              )}
-            </div>
-          )}
         </div>
 
+        {/* Amount + Description rows */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange"
-            placeholder="What did you buy?"
-            required
-          />
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-sm font-medium text-gray-700">
+              {isMultiRow ? `明细 (${filledRowCount} 笔 · $${rowTotal.toFixed(2)})` : "明细"}
+            </label>
+          </div>
+          <div className="space-y-2">
+            {rows.map((row, idx) => (
+              <div key={row.id} className="flex items-center gap-2">
+                <div className="relative w-28 flex-shrink-0">
+                  <span className="absolute left-2.5 top-2.5 text-gray-500 text-sm">$</span>
+                  <input
+                    ref={idx === rows.length - 1 ? newRowRef : undefined}
+                    type="number"
+                    value={row.amount}
+                    onChange={(e) => updateRow(row.id, "amount", e.target.value)}
+                    className="w-full pl-7 pr-2 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+                    placeholder="0.00"
+                    step="0.01"
+                    required={rows.length === 1}
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={row.description}
+                  onChange={(e) => updateRow(row.id, "description", e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+                  placeholder="买了什么？"
+                  required={rows.length === 1}
+                />
+                {isMultiRow && (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(row.id)}
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition flex-shrink-0"
+                    aria-label="删除此行"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addRow}
+            className="mt-2 w-full py-1.5 rounded-lg border border-dashed border-gray-300 text-gray-500 text-xs font-medium hover:border-cat-orange hover:text-cat-orange hover:bg-cat-cream/30 transition flex items-center justify-center gap-1"
+          >
+            <Plus size={14} /> 再加一笔
+          </button>
         </div>
 
+        {/* Lydia share - only in single row mode */}
+        {!isMultiRow && ["Shared", "Felix", "Sophie"].includes(payer) && (
+          <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+            <label className="block text-xs font-bold text-purple-700 mb-1">
+              {LYDIA.name} <span lang="zh">代购份额</span> (optional)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-purple-400 text-sm">$</span>
+              <input
+                type="number"
+                value={lydiaShare}
+                onChange={(e) => setLydiaShare(e.target.value)}
+                className="w-full pl-8 pr-4 py-1.5 rounded-lg border-purple-200 bg-white focus:border-purple-400 focus:ring-purple-400 text-sm"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            {lydiaShare && parseFloat(lydiaShare) > 0 && rows[0].amount && parseFloat(rows[0].amount) > 0 && (
+              <p className="text-[11px] text-purple-600 mt-1.5 font-medium">
+                {payer === "Shared"
+                  ? `Couple: $${(parseFloat(rows[0].amount) - parseFloat(lydiaShare)).toFixed(2)} ($${((parseFloat(rows[0].amount) - parseFloat(lydiaShare)) / 2).toFixed(2)} each) · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`
+                  : `${payer}: $${(parseFloat(rows[0].amount) - parseFloat(lydiaShare)).toFixed(2)} · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Submit */}
         <button
           type="submit"
           disabled={isPending}
@@ -304,8 +388,10 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
         >
           {isPending ? (
             <>Saving...</>
+          ) : filledRowCount > 1 ? (
+            <><Check size={20} /> 全部保存 ({filledRowCount} 笔 · ${rowTotal.toFixed(2)})</>
           ) : (
-            <><Check size={20} /> Save Transaction</>
+            <><Check size={20} /> Save</>
           )}
         </button>
       </form>

@@ -66,6 +66,50 @@ export async function addTransaction(data: {
   }
 }
 
+export async function addMultipleTransactions(
+  date: string,
+  entries: Array<{
+    amount: number;
+    category: string;
+    payer: string;
+    description: string;
+    lydiaShare?: number | null;
+  }>
+): Promise<{ success: boolean; error?: string; count?: number }> {
+  const authError = await requireAuth();
+  if (authError) return authError;
+  try {
+    const dateCheck = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD");
+    dateCheck.parse(date);
+
+    if (entries.length === 0) {
+      return { success: false, error: "No entries to add" };
+    }
+
+    const parsedEntries = entries.map((entry) =>
+      transactionSchema.parse({ ...entry, date })
+    );
+
+    const values = parsedEntries.map((parsed) => ({
+      date: parsed.date,
+      amount: parsed.amount.toFixed(2),
+      category: parsed.category,
+      payer: parsed.payer,
+      description: parsed.description,
+      lydiaShare: parsed.lydiaShare ? parsed.lydiaShare.toFixed(2) : null,
+    }));
+
+    await db.insert(transactions).values(values);
+    revalidatePath("/");
+    return { success: true, count: values.length };
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return { success: false, error: e.errors[0].message };
+    }
+    return { success: false, error: "Failed to add transactions" };
+  }
+}
+
 export async function deleteTransaction(id: string): Promise<{ success: boolean; error?: string }> {
   const authError = await requireAuth();
   if (authError) return authError;
