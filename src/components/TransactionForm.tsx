@@ -14,9 +14,15 @@ interface EntryRow {
   id: string;
   amount: string;
   description: string;
+  category: Category;
 }
 
-const createRow = (): EntryRow => ({ id: nanoid(8), amount: "", description: "" });
+const createRow = (category: Category = "Food"): EntryRow => ({
+  id: nanoid(8),
+  amount: "",
+  description: "",
+  category,
+});
 
 interface TransactionFormProps {
   onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
@@ -33,7 +39,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   const todayStr = melbourneToday();
 
   const [rows, setRows] = useState<EntryRow[]>([createRow()]);
-  const [category, setCategory] = useState<Category>("Food");
   const [payer, setPayer] = useState<PayerType>("Shared");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [weekOffset, setWeekOffset] = useState(0);
@@ -62,8 +67,14 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
+  const updateRowCategory = (id: string, value: Category) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, category: value } : r)));
+  };
+
   const addRow = () => {
-    const newRow = createRow();
+    // Inherit category from last row for convenience
+    const lastCategory = rows[rows.length - 1]?.category ?? "Food";
+    const newRow = createRow(lastCategory);
     setRows((prev) => [...prev, newRow]);
     // Focus the new row's amount input after render
     setTimeout(() => newRowRef.current?.focus(), 0);
@@ -75,7 +86,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
 
   const resetAll = () => {
     setRows([createRow()]);
-    setCategory("Food");
     setPayer("Shared");
     setLydiaShare("");
     setSelectedDate(todayStr);
@@ -90,7 +100,7 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
       .filter((r) => r.amount && r.description)
       .map((r) => ({
         amount: parseFloat(r.amount),
-        category,
+        category: r.category,
         payer,
         description: r.description,
         // Only apply lydiaShare for single-row mode
@@ -243,18 +253,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           </div>
         </div>
 
-        {/* Category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
-            className="w-full px-4 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange"
-          >
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-
         {/* Payer */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Who Paid / For Whom?</label>
@@ -326,10 +324,18 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
                   type="text"
                   value={row.description}
                   onChange={(e) => updateRow(row.id, "description", e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+                  className="flex-1 min-w-0 px-3 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
                   placeholder="买了什么？"
                   required={rows.length === 1}
                 />
+                <select
+                  value={row.category}
+                  onChange={(e) => updateRowCategory(row.id, e.target.value as Category)}
+                  className="w-24 flex-shrink-0 px-2 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+                  aria-label="分类"
+                >
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
                 {isMultiRow && (
                   <button
                     type="button"
