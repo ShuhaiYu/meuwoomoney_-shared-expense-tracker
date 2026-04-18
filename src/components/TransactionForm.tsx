@@ -15,14 +15,24 @@ interface EntryRow {
   amount: string;
   description: string;
   category: Category;
+  payer: PayerType;
 }
 
-const createRow = (category: Category = "Food"): EntryRow => ({
+const createRow = (category: Category = "Food", payer: PayerType = "Shared"): EntryRow => ({
   id: nanoid(8),
   amount: "",
   description: "",
   category,
+  payer,
 });
+
+const PAYER_OPTIONS: Array<{ value: PayerType; label: string }> = [
+  { value: "Shared", label: "50/50" },
+  { value: "Felix", label: FELIX.name },
+  { value: "Sophie", label: SOPHIE.name },
+  { value: "SharedAll", label: "All 3" },
+  { value: "Lydia", label: LYDIA.name },
+];
 
 interface TransactionFormProps {
   onAdd?: (data: { date: string; amount: number; category: string; payer: string; description: string; lydiaShare?: number | null }) => { success: boolean; error?: string };
@@ -39,7 +49,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
   const todayStr = melbourneToday();
 
   const [rows, setRows] = useState<EntryRow[]>([createRow()]);
-  const [payer, setPayer] = useState<PayerType>("Shared");
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [weekOffset, setWeekOffset] = useState(0);
   const [lydiaShare, setLydiaShare] = useState("");
@@ -71,10 +80,14 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, category: value } : r)));
   };
 
+  const updateRowPayer = (id: string, value: PayerType) => {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, payer: value } : r)));
+  };
+
   const addRow = () => {
-    // Inherit category from last row for convenience
-    const lastCategory = rows[rows.length - 1]?.category ?? "Food";
-    const newRow = createRow(lastCategory);
+    // Inherit category and payer from last row for convenience
+    const last = rows[rows.length - 1];
+    const newRow = createRow(last?.category ?? "Food", last?.payer ?? "Shared");
     setRows((prev) => [...prev, newRow]);
     // Focus the new row's amount input after render
     setTimeout(() => newRowRef.current?.focus(), 0);
@@ -86,7 +99,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
 
   const resetAll = () => {
     setRows([createRow()]);
-    setPayer("Shared");
     setLydiaShare("");
     setSelectedDate(todayStr);
     setWeekOffset(0);
@@ -98,14 +110,20 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
     const parsedLydiaShare = lydiaShare ? parseFloat(lydiaShare) : null;
     return rows
       .filter((r) => r.amount && r.description)
-      .map((r) => ({
-        amount: parseFloat(r.amount),
-        category: r.category,
-        payer,
-        description: r.description,
-        // Only apply lydiaShare for single-row mode
-        lydiaShare: !isMultiRow && parsedLydiaShare && parsedLydiaShare > 0 ? parsedLydiaShare : null,
-      }))
+      .map((r) => {
+        const payerSupportsLydia = ["Shared", "Felix", "Sophie"].includes(r.payer);
+        return {
+          amount: parseFloat(r.amount),
+          category: r.category,
+          payer: r.payer,
+          description: r.description,
+          // Only apply lydiaShare for single-row mode and compatible payer
+          lydiaShare:
+            !isMultiRow && payerSupportsLydia && parsedLydiaShare && parsedLydiaShare > 0
+              ? parsedLydiaShare
+              : null,
+        };
+      })
       .filter((e) => !isNaN(e.amount) && e.amount > 0);
   };
 
@@ -253,50 +271,6 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           </div>
         </div>
 
-        {/* Payer */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Who Paid / For Whom?</label>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => setPayer("Shared")}
-              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Shared" ? "border-cat-orange bg-cat-orange/10 text-cat-dark font-bold" : "border-gray-100 text-gray-500"}`}
-            >
-              Shared (50/50)
-            </button>
-            <button
-              type="button"
-              onClick={() => setPayer("Felix")}
-              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Felix" ? "border-cat-teal bg-cat-teal/10 text-cat-teal font-bold" : "border-gray-100 text-gray-500"}`}
-            >
-              {FELIX.name} Only
-            </button>
-            <button
-              type="button"
-              onClick={() => setPayer("Sophie")}
-              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Sophie" ? "border-cat-brown bg-cat-brown/10 text-cat-brown font-bold" : "border-gray-100 text-gray-500"}`}
-            >
-              {SOPHIE.name} Only
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <button
-              type="button"
-              onClick={() => { setPayer("SharedAll"); setLydiaShare(""); }}
-              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "SharedAll" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
-            >
-              All 3 (1/3 each)
-            </button>
-            <button
-              type="button"
-              onClick={() => { setPayer("Lydia"); setLydiaShare(""); }}
-              className={`py-2 rounded-xl border-2 transition-all focus-visible:ring-2 focus-visible:ring-cat-orange ${payer === "Lydia" ? "border-cat-purple bg-cat-purple/10 text-cat-purple font-bold" : "border-gray-100 text-gray-500"}`}
-            >
-              {LYDIA.name} Paid
-            </button>
-          </div>
-        </div>
-
         {/* Amount + Description rows */}
         <div>
           <div className="flex justify-between items-center mb-2">
@@ -336,6 +310,14 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
                 >
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
+                <select
+                  value={row.payer}
+                  onChange={(e) => updateRowPayer(row.id, e.target.value as PayerType)}
+                  className="w-20 flex-shrink-0 px-2 py-2 rounded-xl border-gray-200 bg-cat-cream/30 focus:border-cat-orange focus:ring-cat-orange text-sm"
+                  aria-label="付款方"
+                >
+                  {PAYER_OPTIONS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
                 {isMultiRow && (
                   <button
                     type="button"
@@ -358,8 +340,8 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
           </button>
         </div>
 
-        {/* Lydia share - only in single row mode */}
-        {!isMultiRow && ["Shared", "Felix", "Sophie"].includes(payer) && (
+        {/* Lydia share - only in single row mode when that row's payer is Shared/Felix/Sophie */}
+        {!isMultiRow && ["Shared", "Felix", "Sophie"].includes(rows[0].payer) && (
           <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
             <label className="block text-xs font-bold text-purple-700 mb-1">
               {LYDIA.name} <span lang="zh">代购份额</span> (optional)
@@ -378,9 +360,9 @@ export function TransactionForm({ onAdd }: TransactionFormProps) {
             </div>
             {lydiaShare && parseFloat(lydiaShare) > 0 && rows[0].amount && parseFloat(rows[0].amount) > 0 && (
               <p className="text-[11px] text-purple-600 mt-1.5 font-medium">
-                {payer === "Shared"
+                {rows[0].payer === "Shared"
                   ? `Couple: $${(parseFloat(rows[0].amount) - parseFloat(lydiaShare)).toFixed(2)} ($${((parseFloat(rows[0].amount) - parseFloat(lydiaShare)) / 2).toFixed(2)} each) · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`
-                  : `${payer}: $${(parseFloat(rows[0].amount) - parseFloat(lydiaShare)).toFixed(2)} · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`}
+                  : `${rows[0].payer}: $${(parseFloat(rows[0].amount) - parseFloat(lydiaShare)).toFixed(2)} · ${LYDIA.name}: $${parseFloat(lydiaShare).toFixed(2)}`}
               </p>
             )}
           </div>
